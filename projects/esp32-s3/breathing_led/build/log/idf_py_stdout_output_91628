@@ -1,0 +1,2 @@
+Command: ninja dfu-flash
+[0/1] cd /Users/meng/stu/esp/projects/esp32-s3/breathing_led/build && /Users/meng/.espressif/tools/cmake/3.30.2/CMake.app/Contents/bin/cmake -D ESP_DFU_BIN="/Users/meng/stu/esp/projects/esp32-s3/breathing_led/build/dfu.bin" -D ESP_DFU_PID="9" -P /Users/meng/stu/esp/esp-idf/tools/cmake/run_dfu_util.cmake

@@ -1,0 +1,2 @@
+Command: ninja dfu-flash
+Command list: dfu-util;-d;303a:9;-D;/Users/meng/stu/esp/projects/esp32-s3/breathing_led/build/dfu.bin

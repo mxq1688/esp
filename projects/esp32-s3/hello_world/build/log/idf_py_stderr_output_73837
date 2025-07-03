@@ -1,0 +1,1 @@
+Command: /Users/meng/.espressif/python_env/idf6.0_py3.9_env/bin/python /Users/meng/stu/esp/esp-idf/components/esptool_py/esptool/esptool.py -p /dev/cu.usbmodem58960267321 -b 460800 --before default_reset --after hard_reset --chip esp32s3 erase_flash

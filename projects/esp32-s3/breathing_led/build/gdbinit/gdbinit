@@ -1,0 +1,2 @@
+source /Users/meng/stu/esp/projects/esp32-s3/breathing_led/build/gdbinit/symbols
+source /Users/meng/stu/esp/projects/esp32-s3/breathing_led/build/gdbinit/connect
