@@ -1,5 +1,6 @@
 # ESP-IDF 框架文件夹和压缩包
 esp-idf-master/
+esp-idf
 
 # macOS 系统文件
 .DS_Store
