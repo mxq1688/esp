@@ -1,0 +1,10 @@
+menu "LED Blink Configuration"
+
+    config BLINK_PERIOD
+        int "Blink period in ms"
+        range 100 3000
+        default 1000
+        help
+            Define the blinking period in milliseconds.
+
+endmenu
