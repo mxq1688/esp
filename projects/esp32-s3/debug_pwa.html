@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ESP32-S3 调试工具</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        button { padding: 10px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .result { margin: 10px 0; padding: 10px; border-left: 4px solid #007bff; background: #f8f9fa; }
+        .error { border-left-color: #dc3545; background: #f8d7da; }
+        input { padding: 8px; margin: 5px; border: 1px solid #ccc; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>🔧 ESP32-S3 连接调试工具</h1>
+    
+    <div>
+        <label>ESP32-S3 IP地址:</label>
+        <input type="text" id="espIP" value="192.168.5.48" placeholder="192.168.x.x">
+    </div>
+    
+    <div>
+        <button onclick="testConnection()">🔗 测试连接</button>
+        <button onclick="getStatus()">📊 获取状态</button>
+        <button onclick="setRed()">🔴 设置红色</button>
+        <button onclick="setGreen()">🟢 设置绿色</button>
+        <button onclick="setBlue()">🔵 设置蓝色</button>
+    </div>
+    
+    <div id="results"></div>
+
+    <script>
+        function log(message, isError = false) {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = 'result' + (isError ? ' error' : '');
+            div.innerHTML = `<strong>[${new Date().toLocaleTimeString()}]</strong> ${message}`;
+            results.insertBefore(div, results.firstChild);
+        }
+
+        function getESPIP() {
+            return document.getElementById('espIP').value.trim();
+        }
+
+        async function testConnection() {
+            const ip = getESPIP();
+            log(`正在测试连接到 ${ip}...`);
+            
+            try {
+                const response = await fetch(`http://${ip}/api/status`, {
+                    method: 'GET',
+                    mode: 'cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log(`✅ 连接成功！当前颜色: R=${data.color.red} G=${data.color.green} B=${data.color.blue} 亮度=${data.color.brightness}%`);
+                } else {
+                    log(`❌ 连接失败：HTTP ${response.status}`, true);
+                }
+            } catch (error) {
+                log(`❌ 连接错误：${error.message}`, true);
+            }
+        }
+
+        async function getStatus() {
+            const ip = getESPIP();
+            log(`正在获取状态...`);
+            
+            try {
+                const response = await fetch(`http://${ip}/api/status`);
+                const data = await response.json();
+                log(`📊 状态: R=${data.color.red} G=${data.color.green} B=${data.color.blue} 亮度=${data.color.brightness}%`);
+            } catch (error) {
+                log(`❌ 获取状态失败：${error.message}`, true);
+            }
+        }
+
+        async function setColor(red, green, blue, brightness = 75) {
+            const ip = getESPIP();
+            log(`正在设置颜色 R=${red} G=${green} B=${blue} 亮度=${brightness}%...`);
+            
+            try {
+                const response = await fetch(`http://${ip}/api/color`, {
+                    method: 'POST',
+                    mode: 'cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        red: red,
+                        green: green, 
+                        blue: blue,
+                        brightness: brightness
+                    })
+                });
+                
+                if (response.ok) {
+                    log(`✅ 颜色设置成功！`);
+                    // 验证设置
+                    setTimeout(getStatus, 500);
+                } else {
+                    log(`❌ 设置失败：HTTP ${response.status}`, true);
+                }
+            } catch (error) {
+                log(`❌ 设置错误：${error.message}`, true);
+            }
+        }
+
+        function setRed() { setColor(255, 0, 0); }
+        function setGreen() { setColor(0, 255, 0); }
+        function setBlue() { setColor(0, 0, 255); }
+
+        // 页面加载时自动测试连接
+        window.onload = function() {
+            log('🚀 调试工具已加载');
+            testConnection();
+        };
+    </script>
+</body>
+</html> 
