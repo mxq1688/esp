@@ -1,5 +1,5 @@
 # ESP32 快速开发指南
-
+>https://github.com/espressif/esp-idf#
 ## 1. 激活环境
 ```bash
 source /Users/meng/stu/esp/esp-idf/export.sh

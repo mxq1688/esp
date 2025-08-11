@@ -1,0 +1,29 @@
+# ESP-IDF 框架文件夹和压缩包
+esp-idf-master/
+
+# macOS 系统文件
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE 文件
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 构建输出
+build/
+dist/
+*.o
+*.elf
+*.bin
+*.map
+
+# 日志文件
+*.log
