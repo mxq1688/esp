@@ -1,13 +1,11 @@
 # ESP32 开发环境完整指南
-
 > 官方文档：https://github.com/espressif/esp-idf
-> 
-> 本指南基于 ESP-IDF v5.4，适用于 ESP32-C3-DevKitM-1 和 ESP32-S3 开发板
 
 ## 🔧 环境准备
 ### 安装esp-idf
 ```bash
-./install.sh esp32s3
+cd esp-idf/
+./install.sh
 ```
 ### 1. 激活 ESP-IDF 环境
 ```bash
