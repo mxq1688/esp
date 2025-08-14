@@ -22,7 +22,6 @@ static EventGroupHandle_t s_wifi_event_group;
 
 /* 全局变量 */
 static esp_netif_t *s_netif_sta = NULL;
-static esp_netif_t *s_netif_ap = NULL;
 static wifi_state_t s_wifi_state = WIFI_STATE_DISCONNECTED;
 static int s_retry_num = 0;
 static wifi_event_callback_t s_event_callback = NULL;
@@ -56,64 +55,52 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
             ESP_LOGI(TAG, "Retry to connect to the AP (%d/%d)", s_retry_num, WIFI_MAX_RETRY);
         } else {
             xEventGroupSetBits(s_wifi_event_group, WIFI_FAIL_BIT);
-            ESP_LOGI(TAG, "Failed to connect to WiFi, starting AP mode");
-            wifi_start_ap();
+            ESP_LOGE(TAG, "❌ Failed to connect to WiFi network: %s", ESP_WIFI_STA_SSID);
+            ESP_LOGE(TAG, "Please check network name and password!");
         }
         s_wifi_state = WIFI_STATE_DISCONNECTED;
         strcpy(s_ip_string, "0.0.0.0");
         
         if (s_event_callback) {
-            s_event_callback(WIFI_EVENT_STA_DISCONNECTED, event_data);
+            s_event_callback(WIFI_MANAGER_EVENT_STA_DISCONNECTED, event_data);
         }
         
     } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
-        ESP_LOGI(TAG, "Got IP address: " IPSTR, IP2STR(&event->ip_info.ip));
         snprintf(s_ip_string, sizeof(s_ip_string), IPSTR, IP2STR(&event->ip_info.ip));
+        
+        // 打印超级显眼的IP地址信息
+        ESP_LOGI(TAG, "");
+        ESP_LOGI(TAG, "🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉");
+        ESP_LOGI(TAG, "🎉                                          🎉");
+        ESP_LOGI(TAG, "🎉    ✅ WiFi连接成功！                     🎉");
+        ESP_LOGI(TAG, "🎉    📱 设备IP地址: %s           🎉", s_ip_string);
+        ESP_LOGI(TAG, "🎉    🌐 Web控制地址: http://%s      🎉", s_ip_string);
+        ESP_LOGI(TAG, "🎉    📶 网络: %s                   🎉", ESP_WIFI_STA_SSID);
+        ESP_LOGI(TAG, "🎉                                          🎉");
+        ESP_LOGI(TAG, "🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉");
+        ESP_LOGI(TAG, "");
+        ESP_LOGI(TAG, "💡 请在Web界面中输入IP地址: %s", s_ip_string);
+        ESP_LOGI(TAG, "");
         
         s_retry_num = 0;
         s_wifi_state = WIFI_STATE_CONNECTED;
         xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
         
-        if (s_event_callback) {
-            s_event_callback(WIFI_EVENT_STA_CONNECTED, event_data);
+        // 保存成功连接的WiFi配置到NVS
+        char* ssid = (char*)s_wifi_config.sta.ssid;
+        char* password = (char*)s_wifi_config.sta.password;
+        if (strlen(ssid) > 0) {
+            esp_err_t save_result = wifi_save_config_to_nvs(ssid, password);
+            if (save_result == ESP_OK) {
+                ESP_LOGI(TAG, "✅ WiFi configuration saved to NVS: %s", ssid);
+            } else {
+                ESP_LOGW(TAG, "Failed to save WiFi config to NVS: %s", esp_err_to_name(save_result));
+            }
         }
         
-    } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_AP_STACONNECTED) {
-        wifi_event_ap_staconnected_t* event = (wifi_event_ap_staconnected_t*) event_data;
-        ESP_LOGI(TAG, "Station " MACSTR " joined AP, AID=%d", 
-                 MAC2STR(event->mac), event->aid);
-        
         if (s_event_callback) {
-            s_event_callback(WIFI_EVENT_STA_JOINED, event_data);
-        }
-        
-    } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_AP_STADISCONNECTED) {
-        wifi_event_ap_stadisconnected_t* event = (wifi_event_ap_stadisconnected_t*) event_data;
-        ESP_LOGI(TAG, "Station " MACSTR " left AP, AID=%d", 
-                 MAC2STR(event->mac), event->aid);
-        
-        if (s_event_callback) {
-            s_event_callback(WIFI_EVENT_STA_LEFT, event_data);
-        }
-        
-    } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_AP_START) {
-        ESP_LOGI(TAG, "WiFi AP started");
-        s_wifi_state = WIFI_STATE_AP_MODE;
-        strcpy(s_ip_string, "192.168.4.1");
-        xEventGroupSetBits(s_wifi_event_group, WIFI_AP_STARTED_BIT);
-        
-        if (s_event_callback) {
-            s_event_callback(WIFI_EVENT_AP_STARTED, NULL);
-        }
-        
-    } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_AP_STOP) {
-        ESP_LOGI(TAG, "WiFi AP stopped");
-        s_wifi_state = WIFI_STATE_DISCONNECTED;
-        strcpy(s_ip_string, "0.0.0.0");
-        
-        if (s_event_callback) {
-            s_event_callback(WIFI_EVENT_AP_STOPPED, NULL);
+            s_event_callback(WIFI_MANAGER_EVENT_STA_CONNECTED, event_data);
         }
     }
 }
@@ -215,9 +202,8 @@ esp_err_t wifi_manager_init(void)
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     
-    // 创建网络接口
+    // 创建网络接口 - 仅STA模式
     s_netif_sta = esp_netif_create_default_wifi_sta();
-    s_netif_ap = esp_netif_create_default_wifi_ap();
     
     // 初始化WiFi
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
@@ -229,22 +215,22 @@ esp_err_t wifi_manager_init(void)
     ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, 
                                               &wifi_event_handler, NULL));
     
-    // 设置WiFi模式
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
+    // 设置WiFi模式 - 仅STA模式，不启动热点
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     
-    // 尝试从NVS加载配置
-    char ssid[WIFI_SSID_MAX_LEN] = {0};
-    char password[WIFI_PASSWORD_MAX_LEN] = {0};
+    // 连接到指定的WiFi网络 (仅STA模式)
+    ESP_LOGI(TAG, "🔗 Connecting to WiFi network: %s", ESP_WIFI_STA_SSID);
     
-    if (wifi_load_config_from_nvs(ssid, password) == ESP_OK) {
-        // 自动连接到保存的WiFi
-        ESP_LOGI(TAG, "Auto-connecting to saved WiFi: %s", ssid);
-        wifi_connect_sta(ssid, password, false);
-    } else {
-        // 启动AP模式
-        ESP_LOGI(TAG, "No saved WiFi config, starting AP mode");
-        wifi_start_ap();
-    }
+    // 配置STA模式
+    memset(&s_wifi_config, 0, sizeof(s_wifi_config));
+    strncpy((char*)s_wifi_config.sta.ssid, ESP_WIFI_STA_SSID, sizeof(s_wifi_config.sta.ssid) - 1);
+    strncpy((char*)s_wifi_config.sta.password, ESP_WIFI_STA_PASS, sizeof(s_wifi_config.sta.password) - 1);
+    s_wifi_config.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
+    
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &s_wifi_config));
+    ESP_ERROR_CHECK(esp_wifi_start());
+    
+    ESP_LOGI(TAG, "✅ WiFi connection initiated - waiting for IP address...");
     
     ESP_LOGI(TAG, "WiFi manager initialized successfully");
     return ESP_OK;
@@ -282,30 +268,7 @@ esp_err_t wifi_connect_sta(const char* ssid, const char* password, bool save_to_
     return ESP_OK;
 }
 
-esp_err_t wifi_start_ap(void)
-{
-    ESP_LOGI(TAG, "Starting WiFi AP mode: %s", ESP_WIFI_AP_SSID);
-    
-    wifi_config_t wifi_config = {
-        .ap = {
-            .ssid = ESP_WIFI_AP_SSID,
-            .ssid_len = strlen(ESP_WIFI_AP_SSID),
-            .channel = ESP_WIFI_AP_CHANNEL,
-            .password = ESP_WIFI_AP_PASS,
-            .max_connection = ESP_WIFI_AP_MAX_STA,
-            .authmode = WIFI_AUTH_WPA_WPA2_PSK
-        },
-    };
-    
-    if (strlen(ESP_WIFI_AP_PASS) == 0) {
-        wifi_config.ap.authmode = WIFI_AUTH_OPEN;
-    }
-    
-    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_config));
-    ESP_ERROR_CHECK(esp_wifi_start());
-    
-    return ESP_OK;
-}
+
 
 esp_err_t wifi_disconnect(void)
 {

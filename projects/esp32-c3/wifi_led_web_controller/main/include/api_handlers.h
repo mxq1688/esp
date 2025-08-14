@@ -9,6 +9,7 @@
 
 #include "esp_http_server.h"
 #include "esp_err.h"
+#include "cJSON.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -35,6 +36,13 @@ typedef enum {
 } api_error_code_t;
 
 /* HTTP处理器函数声明 */
+
+/**
+ * @brief OPTIONS预检请求处理器
+ * @param req HTTP请求
+ * @return ESP_OK on success
+ */
+esp_err_t api_options_handler(httpd_req_t *req);
 
 /**
  * @brief 根页面处理器

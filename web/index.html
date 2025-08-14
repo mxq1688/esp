@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 LED控制器</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💡</text></svg>">
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <span class="logo-icon">💡</span>
+                    <h1>ESP32 LED控制器</h1>
+                </div>
+                <div class="status-indicator" id="connectionStatus">
+                    <span class="status-dot"></span>
+                    <span class="status-text">未连接</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- 设备选择区域 -->
+        <section class="device-selection">
+            <h2>🔧 设备配置</h2>
+            <div class="device-config">
+                <div class="input-group">
+                    <label for="deviceType">设备类型:</label>
+                    <select id="deviceType" onchange="updateDeviceInfo()">
+                        <option value="esp32c3">ESP32-C3 (RISC-V)</option>
+                        <option value="esp32s3">ESP32-S3 (Xtensa)</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label for="deviceIP">设备IP地址:</label>
+                    <input type="text" id="deviceIP" value="10.30.6.226" placeholder="例: 10.30.6.226">
+                </div>
+                <div class="input-group">
+                    <button id="connectBtn" class="btn btn-primary" onclick="connectDevice()">
+                        🔗 连接设备
+                    </button>
+                    <button id="scanBtn" class="btn btn-secondary" onclick="scanDevices()">
+                        🔍 扫描设备
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 设备信息显示 -->
+            <div id="deviceInfo" class="device-info" style="display: none;">
+                <h3>📱 设备信息</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">芯片型号:</span>
+                        <span id="chipModel">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">固件版本:</span>
+                        <span id="firmwareVersion">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">运行时间:</span>
+                        <span id="uptime">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">内存使用:</span>
+                        <span id="memoryUsage">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">WiFi状态:</span>
+                        <span id="wifiStatus">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">IP地址:</span>
+                        <span id="currentIP">-</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- LED控制区域 -->
+        <section class="led-control">
+            <h2>🌈 LED控制</h2>
+            
+            <!-- 电源控制 -->
+            <div class="power-control">
+                <label class="switch">
+                    <input type="checkbox" id="powerSwitch" onchange="togglePower()">
+                    <span class="slider"></span>
+                    <span class="switch-label">LED电源</span>
+                </label>
+            </div>
+
+            <!-- 颜色控制 -->
+            <div class="color-control">
+                <h3>🎨 颜色控制</h3>
+                <div class="color-picker-section">
+                    <div class="color-input-group">
+                        <label for="colorPicker">选择颜色:</label>
+                        <input type="color" id="colorPicker" value="#ff0000" onchange="updateColor()">
+                        <div class="color-preview" id="colorPreview"></div>
+                    </div>
+                    
+                    <!-- RGB滑块 -->
+                    <div class="rgb-controls">
+                        <div class="slider-group">
+                            <label for="redSlider">红色 (R):</label>
+                            <input type="range" id="redSlider" min="0" max="255" value="255" oninput="updateRGB()">
+                            <span id="redValue">255</span>
+                        </div>
+                        <div class="slider-group">
+                            <label for="greenSlider">绿色 (G):</label>
+                            <input type="range" id="greenSlider" min="0" max="255" value="0" oninput="updateRGB()">
+                            <span id="greenValue">0</span>
+                        </div>
+                        <div class="slider-group">
+                            <label for="blueSlider">蓝色 (B):</label>
+                            <input type="range" id="blueSlider" min="0" max="255" value="0" oninput="updateRGB()">
+                            <span id="blueValue">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 亮度控制 -->
+            <div class="brightness-control">
+                <h3>💡 亮度控制</h3>
+                <div class="slider-group">
+                    <label for="brightnessSlider">亮度:</label>
+                    <input type="range" id="brightnessSlider" min="0" max="100" value="100" oninput="updateBrightness()">
+                    <span id="brightnessValue">100%</span>
+                </div>
+            </div>
+
+            <!-- 特效控制 -->
+            <div class="effects-control">
+                <h3>✨ 特效模式</h3>
+                <div class="effects-grid">
+                    <button class="effect-btn active" data-effect="static" onclick="setEffect('static')">
+                        🔸 静态
+                    </button>
+                    <button class="effect-btn" data-effect="rainbow" onclick="setEffect('rainbow')">
+                        🌈 彩虹
+                    </button>
+                    <button class="effect-btn" data-effect="breathing" onclick="setEffect('breathing')">
+                        💨 呼吸
+                    </button>
+                    <button class="effect-btn" data-effect="blink" onclick="setEffect('blink')">
+                        ⚡ 闪烁
+                    </button>
+                </div>
+                
+                <div class="effect-speed" id="effectSpeedControl" style="display: none;">
+                    <label for="speedSlider">特效速度:</label>
+                    <input type="range" id="speedSlider" min="1" max="100" value="50" oninput="updateEffectSpeed()">
+                    <span id="speedValue">50</span>
+                </div>
+            </div>
+
+            <!-- 预设颜色 -->
+            <div class="preset-colors">
+                <h3>🎯 预设颜色</h3>
+                <div class="preset-grid">
+                    <button class="preset-btn" style="background: #ff0000" onclick="setPresetColor(255, 0, 0)">红</button>
+                    <button class="preset-btn" style="background: #00ff00" onclick="setPresetColor(0, 255, 0)">绿</button>
+                    <button class="preset-btn" style="background: #0000ff" onclick="setPresetColor(0, 0, 255)">蓝</button>
+                    <button class="preset-btn" style="background: #ffffff; color: #000" onclick="setPresetColor(255, 255, 255)">白</button>
+                    <button class="preset-btn" style="background: #ffff00" onclick="setPresetColor(255, 255, 0)">黄</button>
+                    <button class="preset-btn" style="background: #ff00ff" onclick="setPresetColor(255, 0, 255)">紫</button>
+                    <button class="preset-btn" style="background: #00ffff" onclick="setPresetColor(0, 255, 255)">青</button>
+                    <button class="preset-btn" style="background: #ffa500" onclick="setPresetColor(255, 165, 0)">橙</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 状态日志 -->
+        <section class="log-section">
+            <h2>📝 状态日志</h2>
+            <div class="log-container">
+                <div id="logContent" class="log-content">
+                    <div class="log-entry">
+                        <span class="timestamp">[2024-12-19 10:00:00]</span>
+                        <span class="message">Web控制器初始化完成</span>
+                    </div>
+                </div>
+                <div class="log-controls">
+                    <button class="btn btn-secondary" onclick="clearLog()">清空日志</button>
+                    <button class="btn btn-secondary" onclick="exportLog()">导出日志</button>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- 提示消息 -->
+    <div id="toast" class="toast"></div>
+
+    <!-- 脚本 -->
+    <script src="script.js"></script>
+</body>
+</html>

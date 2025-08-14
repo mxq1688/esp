@@ -8,10 +8,20 @@
 #include "led_controller.h"
 #include "esp_log.h"
 #include "esp_system.h"
+#include "esp_timer.h"
 #include "cJSON.h"
 #include <string.h>
 
 static const char *TAG = "API_HANDLERS";
+
+/* OPTIONS预检请求处理器 */
+esp_err_t api_options_handler(httpd_req_t *req)
+{
+    web_server_set_cors_headers(req);
+    httpd_resp_set_hdr(req, "Access-Control-Max-Age", "86400");
+    httpd_resp_send(req, NULL, 0);
+    return ESP_OK;
+}
 
 /* 根页面处理器 - 现代化Web界面 */
 esp_err_t api_root_handler(httpd_req_t *req)
@@ -192,13 +202,7 @@ esp_err_t api_led_effect_handler(httpd_req_t *req)
     return ret;
 }
 
-/* OPTIONS处理器 */
-esp_err_t api_options_handler(httpd_req_t *req)
-{
-    web_server_set_cors_headers(req);
-    httpd_resp_send(req, NULL, 0);
-    return ESP_OK;
-}
+
 
 /* 辅助函数 */
 cJSON* api_create_success_response(cJSON* data)

@@ -8,7 +8,7 @@
 #define LED_CONTROLLER_H
 
 #include "esp_err.h"
-#include "driver/ledc.h"
+#include "led_strip.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
@@ -16,24 +16,19 @@
 extern "C" {
 #endif
 
-/* GPIO定义 */
-#define LED_RED_GPIO        3   // 红色LED
-#define LED_GREEN_GPIO      4   // 绿色LED
-#define LED_BLUE_GPIO       5   // 蓝色LED
-#define STATUS_LED_GPIO     8   // 状态LED (内置)
+/* GPIO定义 - ESP32-C3-DevKitM-1 */
+#define LED_STRIP_GPIO      8   // 板载WS2812 RGB LED
+#define STATUS_LED_GPIO     8   // 状态LED (与RGB LED共用)
 #define BUTTON_GPIO         9   // 按钮 (内置)
 
-/* PWM配置 */
-#define LEDC_TIMER          LEDC_TIMER_0
-#define LEDC_MODE           LEDC_LOW_SPEED_MODE
-#define LEDC_DUTY_RES       LEDC_TIMER_13_BIT // 8192 levels
-#define LEDC_FREQUENCY      5000  // 5kHz
-#define LEDC_MAX_DUTY       8191  // 2^13 - 1
+/* 兼容性定义 - 映射到WS2812 */
+#define LED_RED_GPIO        8   // 映射到WS2812
+#define LED_GREEN_GPIO      8   // 映射到WS2812
+#define LED_BLUE_GPIO       8   // 映射到WS2812
 
-/* LED通道定义 */
-#define LEDC_CHANNEL_RED    LEDC_CHANNEL_0
-#define LEDC_CHANNEL_GREEN  LEDC_CHANNEL_1
-#define LEDC_CHANNEL_BLUE   LEDC_CHANNEL_2
+/* WS2812 LED配置 */
+#define LED_STRIP_LED_NUMBERS   1
+#define LED_STRIP_RMT_RES_HZ    (10 * 1000 * 1000) // 10MHz
 
 /* 颜色结构体 */
 typedef struct {

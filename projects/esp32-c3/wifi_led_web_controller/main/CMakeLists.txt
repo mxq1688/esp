@@ -24,6 +24,8 @@ idf_component_register(
         freertos
         log
         esp_common
+        spi_flash
+        espressif__led_strip
 )
 
 # 设置组件版本信息

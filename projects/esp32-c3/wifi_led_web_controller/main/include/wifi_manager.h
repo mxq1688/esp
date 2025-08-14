@@ -20,20 +20,24 @@ extern "C" {
 #define WIFI_PASSWORD_MAX_LEN   64
 #define WIFI_MAX_RETRY          10
 
-/* AP模式配置 */
+/* 默认STA模式配置 */
+#define ESP_WIFI_STA_SSID       "Mobvoi-Guest"
+#define ESP_WIFI_STA_PASS       "mobvoiguest"
+
+/* AP模式配置 (作为备用) */
 #define ESP_WIFI_AP_SSID        "ESP32C3-LED-Controller"
 #define ESP_WIFI_AP_PASS        "12345678"
 #define ESP_WIFI_AP_CHANNEL     1
 #define ESP_WIFI_AP_MAX_STA     4
 
-/* WiFi事件 */
+/* WiFi管理器事件 */
 typedef enum {
-    WIFI_EVENT_STA_CONNECTED,
-    WIFI_EVENT_STA_DISCONNECTED,
-    WIFI_EVENT_AP_STARTED,
-    WIFI_EVENT_AP_STOPPED,
-    WIFI_EVENT_STA_JOINED,
-    WIFI_EVENT_STA_LEFT
+    WIFI_MANAGER_EVENT_STA_CONNECTED,
+    WIFI_MANAGER_EVENT_STA_DISCONNECTED,
+    WIFI_MANAGER_EVENT_AP_STARTED,
+    WIFI_MANAGER_EVENT_AP_STOPPED,
+    WIFI_MANAGER_EVENT_STA_JOINED,
+    WIFI_MANAGER_EVENT_STA_LEFT
 } wifi_manager_event_t;
 
 /* WiFi状态 */
@@ -76,7 +80,7 @@ esp_err_t wifi_connect_sta(const char* ssid, const char* password, bool save_to_
  * @brief 启动AP模式
  * @return ESP_OK on success
  */
-esp_err_t wifi_start_ap(void);
+
 
 /**
  * @brief 停止WiFi连接

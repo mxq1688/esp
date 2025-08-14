@@ -9,6 +9,7 @@
 
 #include "esp_http_server.h"
 #include "esp_err.h"
+#include "cJSON.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -16,7 +17,7 @@ extern "C" {
 
 /* 服务器配置 */
 #define WEB_SERVER_PORT         80
-#define WEB_SERVER_MAX_CLIENTS  10
+#define WEB_SERVER_MAX_CLIENTS  4
 #define WEB_SERVER_STACK_SIZE   8192
 
 /* URI路径定义 */

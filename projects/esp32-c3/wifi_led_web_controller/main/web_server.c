@@ -69,6 +69,39 @@ esp_err_t web_server_register_handlers(httpd_handle_t server)
     };
     httpd_register_uri_handler(server, &root_uri);
     
+    // 为所有API路径注册OPTIONS处理器 (CORS预检)
+    httpd_uri_t options_status_uri = {
+        .uri = URI_API_STATUS,
+        .method = HTTP_OPTIONS,
+        .handler = api_options_handler,
+        .user_ctx = NULL
+    };
+    httpd_register_uri_handler(server, &options_status_uri);
+    
+    httpd_uri_t options_led_color_uri = {
+        .uri = URI_API_LED_COLOR,
+        .method = HTTP_OPTIONS,
+        .handler = api_options_handler,
+        .user_ctx = NULL
+    };
+    httpd_register_uri_handler(server, &options_led_color_uri);
+    
+    httpd_uri_t options_led_power_uri = {
+        .uri = URI_API_LED_POWER,
+        .method = HTTP_OPTIONS,
+        .handler = api_options_handler,
+        .user_ctx = NULL
+    };
+    httpd_register_uri_handler(server, &options_led_power_uri);
+    
+    httpd_uri_t options_led_effect_uri = {
+        .uri = URI_API_LED_EFFECT,
+        .method = HTTP_OPTIONS,
+        .handler = api_options_handler,
+        .user_ctx = NULL
+    };
+    httpd_register_uri_handler(server, &options_led_effect_uri);
+    
     // 系统状态API
     httpd_uri_t status_uri = {
         .uri = URI_API_STATUS,
@@ -167,7 +200,15 @@ esp_err_t web_server_send_error_response(httpd_req_t *req, httpd_err_code_t stat
 {
     web_server_set_cors_headers(req);
     httpd_resp_set_type(req, "application/json");
-    httpd_resp_set_status(req, httpd_err_code_str(status));
+    
+    const char* status_str;
+    switch(status) {
+        case HTTPD_400_BAD_REQUEST: status_str = "400 Bad Request"; break;
+        case HTTPD_404_NOT_FOUND: status_str = "404 Not Found"; break;
+        case HTTPD_500_INTERNAL_SERVER_ERROR: status_str = "500 Internal Server Error"; break;
+        default: status_str = "400 Bad Request"; break;
+    }
+    httpd_resp_set_status(req, status_str);
     
     cJSON *json = cJSON_CreateObject();
     cJSON *error = cJSON_CreateString(message);

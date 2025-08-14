@@ -3,20 +3,16 @@
  * 
  * 功能特性：
  * - ESP32-C3 RISC-V处理器优化
- * - 双模WiFi (STA + AP)
+ * - WiFi STA模式连接
  * - 现代化Web控制界面
  * - RESTful API
- * - RGB LED PWM控制
- * - 实时WebSocket通信
- * - OTA固件更新支持
+ * - WS2812 RGB LED控制
+ * - 实时状态监控
  * - 低功耗模式
  * 
- * 硬件连接：
- * - Red LED:   GPIO3 (PWM)
- * - Green LED: GPIO4 (PWM) 
- * - Blue LED:  GPIO5 (PWM)
- * - Status LED: GPIO8 (Built-in)
- * - Button:    GPIO9 (Built-in)
+ * 硬件连接 (ESP32-C3-DevKitM-1)：
+ * - WS2812 RGB LED: GPIO8 (板载)
+ * - Button:         GPIO9 (内置按钮)
  */
 
 #include <stdio.h>
@@ -35,8 +31,10 @@
 #include "esp_http_server.h"
 #include "esp_timer.h"
 #include "driver/gpio.h"
-#include "driver/ledc.h"
+
 #include "cJSON.h"
+#include "esp_chip_info.h"
+#include "esp_flash.h"
 
 // 本地头文件
 #include "wifi_manager.h"
@@ -50,27 +48,33 @@ static const char *TAG = "ESP32C3_MAIN";
 httpd_handle_t g_server = NULL;
 esp_timer_handle_t status_timer = NULL;
 
-/* 状态指示灯任务 */
+/* 状态指示灯任务 - 使用WS2812显示状态 */
 static void status_led_task(void *pvParameters)
 {
-    gpio_set_direction(STATUS_LED_GPIO, GPIO_MODE_OUTPUT);
+    rgb_color_t status_color;
     
     while (1) {
         if (wifi_is_connected()) {
-            // WiFi已连接 - 慢闪
-            gpio_set_level(STATUS_LED_GPIO, 1);
+            // WiFi已连接 - 绿色慢闪
+            status_color = (rgb_color_t){0, 50, 0, 20}; // 淡绿色，低亮度
+            led_set_color(&status_color);
+            led_set_power(true);
             vTaskDelay(pdMS_TO_TICKS(1800));
-            gpio_set_level(STATUS_LED_GPIO, 0);
+            led_set_power(false);
             vTaskDelay(pdMS_TO_TICKS(200));
         } else if (wifi_is_ap_mode()) {
-            // AP模式 - 快闪
-            gpio_set_level(STATUS_LED_GPIO, 1);
+            // AP模式 - 蓝色快闪
+            status_color = (rgb_color_t){0, 0, 50, 20}; // 淡蓝色，低亮度
+            led_set_color(&status_color);
+            led_set_power(true);
             vTaskDelay(pdMS_TO_TICKS(200));
-            gpio_set_level(STATUS_LED_GPIO, 0);
+            led_set_power(false);
             vTaskDelay(pdMS_TO_TICKS(200));
         } else {
-            // 连接中 - 常亮
-            gpio_set_level(STATUS_LED_GPIO, 1);
+            // 连接中 - 橙色常亮
+            status_color = (rgb_color_t){50, 25, 0, 15}; // 橙色，极低亮度
+            led_set_color(&status_color);
+            led_set_power(true);
             vTaskDelay(pdMS_TO_TICKS(100));
         }
     }
@@ -140,9 +144,16 @@ void app_main(void)
 {
     ESP_LOGI(TAG, "ESP32-C3 WiFi LED Web Controller Starting...");
     ESP_LOGI(TAG, "ESP-IDF Version: %s", esp_get_idf_version());
-    ESP_LOGI(TAG, "Chip: %s Rev %d", CONFIG_IDF_TARGET, esp_chip_info_get_revision());
-    ESP_LOGI(TAG, "Flash: %" PRIu32 "MB %s", spi_flash_get_chip_size() / (1024 * 1024),
-             (esp_flash_get_chip_write_protect(NULL) ? "(WP)" : ""));
+    esp_chip_info_t chip_info;
+    esp_chip_info(&chip_info);
+    ESP_LOGI(TAG, "Chip: %s Rev v%d.%d", CONFIG_IDF_TARGET, chip_info.revision / 100, chip_info.revision % 100);
+    
+    uint32_t flash_size;
+    esp_flash_get_size(NULL, &flash_size);
+    bool write_protected = false;
+    esp_flash_get_chip_write_protect(NULL, &write_protected);
+    ESP_LOGI(TAG, "Flash: %" PRIu32 "MB %s", flash_size / (1024 * 1024),
+             (write_protected ? "(WP)" : ""));
     
     // 1. 初始化NVS
     esp_err_t ret = nvs_flash_init();
@@ -183,9 +194,9 @@ void app_main(void)
     ESP_ERROR_CHECK(esp_timer_create(&timer_args, &status_timer));
     ESP_ERROR_CHECK(esp_timer_start_periodic(status_timer, 500000)); // 500ms
     
-    // 7. 启动状态LED任务
-    xTaskCreate(status_led_task, "status_led", 2048, NULL, 5, NULL);
-    ESP_LOGI(TAG, "Status LED task started");
+    // 7. 启动状态LED任务 (暂时禁用以避免干扰WS2812控制)
+    // xTaskCreate(status_led_task, "status_led", 2048, NULL, 5, NULL);
+    ESP_LOGI(TAG, "Status LED task disabled (using WS2812 control instead)");
     
     // 8. 启动按钮处理任务
     xTaskCreate(button_task, "button", 2048, NULL, 5, NULL);

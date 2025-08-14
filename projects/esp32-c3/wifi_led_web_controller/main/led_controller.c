@@ -1,7 +1,7 @@
 /*
  * LED Controller Implementation for ESP32-C3
  * 
- * RGB LED PWM控制和特效实现
+ * WS2812 RGB LED控制和特效实现
  */
 
 #include "led_controller.h"
@@ -9,6 +9,7 @@
 #include "nvs_flash.h"
 #include "nvs.h"
 #include "freertos/semphr.h"
+#include "led_strip.h"
 #include <math.h>
 #include <string.h>
 
@@ -26,6 +27,7 @@ static led_state_t s_led_state = {
 static TaskHandle_t s_effect_task_handle = NULL;
 static SemaphoreHandle_t s_led_mutex = NULL;
 static bool s_led_initialized = false;
+static led_strip_handle_t s_led_strip = NULL;
 
 /* 预设颜色定义 */
 const rgb_color_t COLOR_RED       = {255, 0,   0,   100};
@@ -61,80 +63,51 @@ esp_err_t led_controller_init(void)
         return ESP_FAIL;
     }
     
-    // 配置定时器
-    ledc_timer_config_t ledc_timer = {
-        .duty_resolution = LEDC_DUTY_RES,
-        .freq_hz = LEDC_FREQUENCY,
-        .speed_mode = LEDC_MODE,
-        .timer_num = LEDC_TIMER,
-        .clk_cfg = LEDC_AUTO_CLK,
-    };
-    ESP_ERROR_CHECK(ledc_timer_config(&ledc_timer));
+    // 配置WS2812 LED Strip
+    ESP_LOGI(TAG, "Configuring WS2812 RGB LED on GPIO%d", LED_STRIP_GPIO);
     
-    // 配置红色通道
-    ledc_channel_config_t ledc_channel_red = {
-        .channel    = LEDC_CHANNEL_RED,
-        .duty       = 0,
-        .gpio_num   = LED_RED_GPIO,
-        .speed_mode = LEDC_MODE,
-        .hpoint     = 0,
-        .timer_sel  = LEDC_TIMER,
-        .flags.output_invert = 0
+    led_strip_config_t strip_config = {
+        .strip_gpio_num = LED_STRIP_GPIO,
+        .max_leds = LED_STRIP_LED_NUMBERS,
     };
-    ESP_ERROR_CHECK(ledc_channel_config(&ledc_channel_red));
     
-    // 配置绿色通道
-    ledc_channel_config_t ledc_channel_green = {
-        .channel    = LEDC_CHANNEL_GREEN,
-        .duty       = 0,
-        .gpio_num   = LED_GREEN_GPIO,
-        .speed_mode = LEDC_MODE,
-        .hpoint     = 0,
-        .timer_sel  = LEDC_TIMER,
-        .flags.output_invert = 0
+    led_strip_rmt_config_t rmt_config = {
+        .resolution_hz = LED_STRIP_RMT_RES_HZ,
+        .flags.with_dma = false,
     };
-    ESP_ERROR_CHECK(ledc_channel_config(&ledc_channel_green));
     
-    // 配置蓝色通道
-    ledc_channel_config_t ledc_channel_blue = {
-        .channel    = LEDC_CHANNEL_BLUE,
-        .duty       = 0,
-        .gpio_num   = LED_BLUE_GPIO,
-        .speed_mode = LEDC_MODE,
-        .hpoint     = 0,
-        .timer_sel  = LEDC_TIMER,
-        .flags.output_invert = 0
-    };
-    ESP_ERROR_CHECK(ledc_channel_config(&ledc_channel_blue));
+    ESP_ERROR_CHECK(led_strip_new_rmt_device(&strip_config, &rmt_config, &s_led_strip));
+    
+    // 清除LED显示
+    led_strip_clear(s_led_strip);
     
     s_led_initialized = true;
-    ESP_LOGI(TAG, "LED controller initialized - R:%d G:%d B:%d", LED_RED_GPIO, LED_GREEN_GPIO, LED_BLUE_GPIO);
+    ESP_LOGI(TAG, "LED controller initialized - WS2812 on GPIO:%d", LED_STRIP_GPIO);
     
     return ESP_OK;
 }
 
-/* 更新PWM输出 */
-static esp_err_t led_update_pwm_output(void)
+/* 更新WS2812输出 */
+static esp_err_t led_update_ws2812_output(void)
 {
-    if (!s_led_initialized) {
+    if (!s_led_initialized || !s_led_strip) {
         return ESP_ERR_INVALID_STATE;
     }
     
-    uint32_t red_duty = 0, green_duty = 0, blue_duty = 0;
-    
-    if (s_led_state.power_on) {
-        red_duty = (s_led_state.color.red * s_led_state.color.brightness * LEDC_MAX_DUTY) / (255 * 100);
-        green_duty = (s_led_state.color.green * s_led_state.color.brightness * LEDC_MAX_DUTY) / (255 * 100);
-        blue_duty = (s_led_state.color.blue * s_led_state.color.brightness * LEDC_MAX_DUTY) / (255 * 100);
+    if (!s_led_state.power_on) {
+        // LED关闭，清除显示
+        led_strip_clear(s_led_strip);
+    } else {
+        // 计算实际输出值（考虑亮度）
+        uint8_t red = (s_led_state.color.red * s_led_state.color.brightness) / 100;
+        uint8_t green = (s_led_state.color.green * s_led_state.color.brightness) / 100;
+        uint8_t blue = (s_led_state.color.blue * s_led_state.color.brightness) / 100;
+        
+        led_strip_set_pixel(s_led_strip, 0, red, green, blue);
     }
     
-    ESP_ERROR_CHECK(ledc_set_duty(LEDC_MODE, LEDC_CHANNEL_RED, red_duty));
-    ESP_ERROR_CHECK(ledc_set_duty(LEDC_MODE, LEDC_CHANNEL_GREEN, green_duty));
-    ESP_ERROR_CHECK(ledc_set_duty(LEDC_MODE, LEDC_CHANNEL_BLUE, blue_duty));
-    
-    ESP_ERROR_CHECK(ledc_update_duty(LEDC_MODE, LEDC_CHANNEL_RED));
-    ESP_ERROR_CHECK(ledc_update_duty(LEDC_MODE, LEDC_CHANNEL_GREEN));
-    ESP_ERROR_CHECK(ledc_update_duty(LEDC_MODE, LEDC_CHANNEL_BLUE));
+    // 刷新LED显示
+    led_strip_refresh(s_led_strip);
     
     return ESP_OK;
 }
@@ -148,7 +121,7 @@ esp_err_t led_set_color(const rgb_color_t* color)
     
     if (xSemaphoreTake(s_led_mutex, pdMS_TO_TICKS(100)) == pdTRUE) {
         s_led_state.color = *color;
-        esp_err_t ret = led_update_pwm_output();
+        esp_err_t ret = led_update_ws2812_output();
         xSemaphoreGive(s_led_mutex);
         
         ESP_LOGI(TAG, "Color set to R:%d G:%d B:%d Brightness:%d%%", 
@@ -181,7 +154,7 @@ esp_err_t led_set_brightness(uint8_t brightness)
     
     if (xSemaphoreTake(s_led_mutex, pdMS_TO_TICKS(100)) == pdTRUE) {
         s_led_state.color.brightness = brightness;
-        esp_err_t ret = led_update_pwm_output();
+        esp_err_t ret = led_update_ws2812_output();
         xSemaphoreGive(s_led_mutex);
         
         ESP_LOGI(TAG, "Brightness set to %d%%", brightness);
@@ -200,7 +173,7 @@ esp_err_t led_set_power(bool power_on)
     
     if (xSemaphoreTake(s_led_mutex, pdMS_TO_TICKS(100)) == pdTRUE) {
         s_led_state.power_on = power_on;
-        esp_err_t ret = led_update_pwm_output();
+        esp_err_t ret = led_update_ws2812_output();
         xSemaphoreGive(s_led_mutex);
         
         ESP_LOGI(TAG, "LED power %s", power_on ? "ON" : "OFF");
@@ -234,7 +207,7 @@ void led_hsv_to_rgb(const hsv_color_t* hsv, rgb_color_t* rgb)
     float v = (hsv->value > 1.0f) ? 1.0f : (hsv->value < 0.0f) ? 0.0f : hsv->value;
     
     float c = v * s;
-    float x = c * (1.0f - fabsf(fmod(h / 60.0f, 2.0f) - 1.0f));
+    float x = c * (1.0f - fabsf((float)fmod(h / 60.0f, 2.0f) - 1.0f));
     float m = v - c;
     
     float r, g, b;
@@ -285,13 +258,13 @@ static void led_effect_task(void *pvParameters)
                 s_led_state.color.red = temp_color.red;
                 s_led_state.color.green = temp_color.green;
                 s_led_state.color.blue = temp_color.blue;
-                led_update_pwm_output();
+                led_update_ws2812_output();
                 
                 hue = (hue + 2) % 360;
                 
             } else if (strcmp(s_led_state.effect_mode, "breathing") == 0) {
                 s_led_state.color.brightness = brightness_val;
-                led_update_pwm_output();
+                led_update_ws2812_output();
                 
                 brightness_val += brightness_dir * 2;
                 if (brightness_val >= 100) {
@@ -304,7 +277,7 @@ static void led_effect_task(void *pvParameters)
                 
             } else if (strcmp(s_led_state.effect_mode, "blink") == 0) {
                 s_led_state.power_on = blink_state;
-                led_update_pwm_output();
+                led_update_ws2812_output();
                 blink_state = !blink_state;
                 effect_delay = 500;
             }
@@ -318,7 +291,7 @@ static void led_effect_task(void *pvParameters)
     if (xSemaphoreTake(s_led_mutex, pdMS_TO_TICKS(100)) == pdTRUE) {
         strcpy(s_led_state.effect_mode, "static");
         s_led_state.power_on = true;
-        led_update_pwm_output();
+        led_update_ws2812_output();
         xSemaphoreGive(s_led_mutex);
     }
     
@@ -408,7 +381,11 @@ void led_startup_animation(void)
         vTaskDelay(pdMS_TO_TICKS(50));
     }
     
-    led_set_power(false);
+    // 启动动画完成后，保持LED开启状态，设置为白色低亮度
+    rgb_color_t startup_complete = {255, 255, 255, 20};
+    led_set_color(&startup_complete);
+    led_set_power(true);
+    ESP_LOGI(TAG, "Startup animation completed - LED ready for control");
 }
 
 /* WiFi连接指示 */
