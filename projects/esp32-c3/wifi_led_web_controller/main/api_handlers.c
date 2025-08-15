@@ -31,17 +31,23 @@ esp_err_t api_root_handler(httpd_req_t *req)
     
     const char* html = 
         "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>ESP32-C3 LED控制器</title>"
-        "<style>body{font-family:Arial;background:#f0f2f5;margin:0;padding:20px;}"
+        "<style>body{font-family:Arial;background:#f0f2f5;margin:0;padding:20px;box-sizing:border-box;}"
         ".container{max-width:400px;margin:0 auto;background:white;padding:30px;border-radius:15px;box-shadow:0 4px 12px rgba(0,0,0,0.1);}"
-        "h1{text-align:center;color:#333;margin-bottom:30px;}"
+        "h1{text-align:center;color:#333;margin-bottom:30px;font-size:24px;}"
         ".control{margin:20px 0;padding:15px;background:#f8f9fa;border-radius:10px;}"
         ".slider{width:100%;margin:10px 0;}"
         "input[type='range']{width:100%;height:6px;border-radius:3px;outline:none;}"
-        ".btn{padding:10px 20px;margin:5px;border:none;border-radius:8px;cursor:pointer;font-weight:bold;}"
+        ".btn{padding:10px 20px;margin:5px;border:none;border-radius:8px;cursor:pointer;font-weight:bold;width:calc(50% - 10px);box-sizing:border-box;}"
         ".btn-power{background:#28a745;color:white;}"
         ".btn-effect{background:#007bff;color:white;}"
         "#preview{width:60px;height:60px;border-radius:50%;margin:15px auto;border:2px solid #ddd;}"
         ".value{float:right;font-weight:bold;color:#007bff;}"
+        "@media (max-width: 600px) {"
+        "body{padding:10px;}"
+        ".container{padding:20px;border-radius:10px;}"
+        "h1{font-size:20px;margin-bottom:20px;}"
+        ".btn{width:calc(100% - 10px);display:block;margin:10px auto;}"
+        "}"
         "</style></head><body>"
         "<div class='container'><h1>🌈 ESP32-C3 LED控制器</h1>"
         "<div id='preview' style='background:rgb(255,255,255);'></div>"
@@ -166,6 +172,7 @@ esp_err_t api_led_power_handler(httpd_req_t *req)
 /* LED特效控制API */
 esp_err_t api_led_effect_handler(httpd_req_t *req)
 {
+    ESP_LOGI(TAG, "Received request for /api/led/effect, Method: %d", req->method);
     char buffer[150];
     cJSON *json = web_server_parse_json_body(req, buffer, sizeof(buffer));
     

@@ -136,6 +136,12 @@ static void system_status_timer_callback(void* arg)
         ESP_LOGI(TAG, "Heap - Total: %zu, Free: %zu, Largest: %zu", 
                  info.total_allocated_bytes + info.total_free_bytes,
                  info.total_free_bytes, info.largest_free_block);
+        
+        // 网络状态与IP
+        const char *ip = wifi_get_ip_string();
+        ESP_LOGI(TAG, "Network - %s, IP: %s", 
+                 wifi_is_connected() ? "STA connected" : "disconnected",
+                 (ip && strlen(ip) > 0) ? ip : "0.0.0.0");
     }
 }
 
@@ -179,9 +185,15 @@ void app_main(void)
     g_server = web_server_start();
     if (g_server) {
         ESP_LOGI(TAG, "Web server started successfully");
+        const char *ip = wifi_get_ip_string();
+        bool have_ip = (ip && strlen(ip) > 0 && strcmp(ip, "0.0.0.0") != 0);
         ESP_LOGI(TAG, "Access URLs:");
         ESP_LOGI(TAG, "  - AP Mode: http://192.168.4.1");
-        ESP_LOGI(TAG, "  - STA Mode: http://[your-ip-address]");
+        if (have_ip) {
+            ESP_LOGI(TAG, "  - STA Mode: http://%s", ip);
+        } else {
+            ESP_LOGI(TAG, "  - STA Mode: waiting for IP ...");
+        }
     } else {
         ESP_LOGE(TAG, "Failed to start web server");
     }

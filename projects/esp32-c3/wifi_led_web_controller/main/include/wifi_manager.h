@@ -21,8 +21,8 @@ extern "C" {
 #define WIFI_MAX_RETRY          10
 
 /* 默认STA模式配置 */
-#define ESP_WIFI_STA_SSID       "Mobvoi-Guest"
-#define ESP_WIFI_STA_PASS       "mobvoiguest"
+#define ESP_WIFI_STA_SSID       "mem2"
+#define ESP_WIFI_STA_PASS       "md11180829"
 
 /* AP模式配置 (作为备用) */
 #define ESP_WIFI_AP_SSID        "ESP32C3-LED-Controller"
@@ -78,9 +78,11 @@ esp_err_t wifi_connect_sta(const char* ssid, const char* password, bool save_to_
 
 /**
  * @brief 启动AP模式
+ * @param ssid AP网络名称
+ * @param password AP密码
  * @return ESP_OK on success
  */
-
+esp_err_t wifi_start_ap(const char* ssid, const char* password);
 
 /**
  * @brief 停止WiFi连接

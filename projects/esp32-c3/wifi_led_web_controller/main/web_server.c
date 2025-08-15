@@ -33,6 +33,7 @@ httpd_handle_t web_server_start(void)
     config.max_open_sockets = WEB_SERVER_MAX_CLIENTS;
     config.stack_size = WEB_SERVER_STACK_SIZE;
     config.lru_purge_enable = true;
+    config.max_uri_handlers = 12; // 增加URI处理器的槽位数
     
     httpd_handle_t server = NULL;
     
