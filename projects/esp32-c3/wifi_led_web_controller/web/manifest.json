@@ -1,0 +1,21 @@
+{
+    "name": "ESP32-C3 LED控制器",
+    "short_name": "LED控制器",
+    "description": "ESP32-C3 WiFi LED Web控制器",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#667eea",
+    "theme_color": "#007bff",
+    "orientation": "portrait-primary",
+    "icons": [
+        {
+            "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌈</text></svg>",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
+        }
+    ],
+    "categories": ["utilities", "productivity"],
+    "lang": "zh-CN",
+    "dir": "ltr"
+}

@@ -21,7 +21,602 @@ const char index_html[] = R"rawliteral(
     <title>ESP32-C3 LED控制器</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌈</text></svg>">
     <link rel="manifest" href="/manifest.json">
-    <style id="embedded-style"></style>
+    <style id="embedded-style">
+/* 现代化LED控制器样式 - 重新设计 */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+/* CSS变量定义 */
+:root {
+    --primary-color: #6366f1;
+    --primary-dark: #4f46e5;
+    --primary-light: #a5b4fc;
+    --secondary-color: #ec4899;
+    --accent-color: #06b6d4;
+    --success-color: #10b981;
+    --warning-color: #f59e0b;
+    --error-color: #ef4444;
+    
+    --bg-primary: #0f172a;
+    --bg-secondary: #1e293b;
+    --bg-tertiary: #334155;
+    --bg-card: rgba(30, 41, 59, 0.8);
+    --bg-glass: rgba(255, 255, 255, 0.1);
+    
+    --text-primary: #f8fafc;
+    --text-secondary: #cbd5e1;
+    --text-muted: #94a3b8;
+    
+    --border-color: rgba(148, 163, 184, 0.2);
+    --shadow-light: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --shadow-medium: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    --shadow-heavy: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    
+    --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --gradient-secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --gradient-accent: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --gradient-success: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    
+    --border-radius: 16px;
+    --border-radius-lg: 24px;
+    --border-radius-xl: 32px;
+    
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 全局样式重置 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+/* 基础样式 */
+html {
+    font-size: 16px;
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.6;
+    font-weight: 400;
+    overflow-x: hidden;
+    position: relative;
+    min-height: 100vh;
+}
+
+/* 背景装饰 */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+        radial-gradient(circle at 20% 80%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(236, 72, 153, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(6, 182, 212, 0.1) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: -1;
+}
+
+/* 滚动条美化 */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-color);
+}
+
+/* 应用容器 */
+.app {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    gap: 1.5rem;
+}
+
+/* 头部样式 */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.header h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* 状态指示器 */
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: var(--bg-card);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    backdrop-filter: blur(10px);
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--success-color);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.status-dot.disconnected {
+    background: var(--error-color);
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.status-text {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+/* 主内容区域 */
+.main {
+    flex: 1;
+    display: flex;
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+/* 控制面板 */
+.control-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* 卡片样式 */
+.card {
+    background: var(--bg-card);
+    border-radius: var(--border-radius-lg);
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+    backdrop-filter: blur(10px);
+    box-shadow: var(--shadow-medium);
+    transition: var(--transition);
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-heavy);
+}
+
+.card h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* 颜色控制 */
+.color-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.color-slider {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.color-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.color-value-display {
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+    color: var(--text-primary);
+    background: var(--bg-tertiary);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    min-width: 3rem;
+    text-align: center;
+}
+
+/* 滑块样式 */
+.slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 8px;
+    border-radius: 4px;
+    background: var(--bg-tertiary);
+    outline: none;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    cursor: pointer;
+    box-shadow: var(--shadow-light);
+    transition: var(--transition);
+}
+
+.slider::-webkit-slider-thumb:hover {
+    transform: scale(1.1);
+    box-shadow: var(--shadow-medium);
+}
+
+.slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    cursor: pointer;
+    border: none;
+    box-shadow: var(--shadow-light);
+}
+
+/* 红色滑块 */
+.slider[data-color="red"]::-webkit-slider-thumb {
+    background: #ef4444;
+}
+
+.slider[data-color="green"]::-webkit-slider-thumb {
+    background: #10b981;
+}
+
+.slider[data-color="blue"]::-webkit-slider-thumb {
+    background: #3b82f6;
+}
+
+/* 按钮样式 */
+.btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: var(--border-radius);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    text-decoration: none;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-medium);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+.btn.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.btn-power {
+    background: var(--gradient-success);
+    color: white;
+    border: none;
+    font-size: 1rem;
+    padding: 1rem 2rem;
+}
+
+.btn-power.off {
+    background: var(--gradient-secondary);
+}
+
+/* 特效控制 */
+.effect-controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 0.75rem;
+}
+
+.btn-effect {
+    flex-direction: column;
+    padding: 1rem;
+    min-height: 80px;
+}
+
+.btn-effect .btn-icon {
+    font-size: 1.5rem;
+}
+
+/* 预设颜色 */
+.preset-colors {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+    gap: 0.75rem;
+}
+
+.preset-btn {
+    width: 60px;
+    height: 60px;
+    border-radius: var(--border-radius);
+    border: 2px solid var(--border-color);
+    cursor: pointer;
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+}
+
+.preset-btn:hover {
+    transform: scale(1.05);
+    border-color: var(--primary-color);
+}
+
+.preset-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+    transform: translateX(-100%);
+    transition: var(--transition);
+}
+
+.preset-btn:hover::before {
+    transform: translateX(100%);
+}
+
+/* 颜色预览 */
+.color-preview {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.preview-card {
+    background: var(--bg-card);
+    border-radius: var(--border-radius-lg);
+    padding: 2rem;
+    border: 1px solid var(--border-color);
+    backdrop-filter: blur(10px);
+    box-shadow: var(--shadow-medium);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+    position: relative;
+    overflow: hidden;
+}
+
+.preview-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at center, currentColor 0%, transparent 70%);
+    opacity: 0.1;
+    pointer-events: none;
+}
+
+.color-display {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    border: 4px solid var(--border-color);
+    box-shadow: var(--shadow-heavy);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: 700;
+    color: white;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    transition: var(--transition);
+    position: relative;
+    z-index: 1;
+}
+
+.color-display.off {
+    background: #374151 !important;
+    color: var(--text-muted);
+}
+
+.color-info {
+    margin-top: 1rem;
+    text-align: center;
+}
+
+.color-hex {
+    font-family: 'Courier New', monospace;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.color-rgb {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .main {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .header {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+    
+    .header h1 {
+        font-size: 1.25rem;
+    }
+    
+    .effect-controls {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .preset-colors {
+        grid-template-columns: repeat(4, 1fr);
+    }
+    
+    .color-display {
+        width: 150px;
+        height: 150px;
+        font-size: 1.5rem;
+    }
+    
+    .card {
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .app {
+        padding: 0.5rem;
+    }
+    
+    .effect-controls {
+        grid-template-columns: 1fr;
+    }
+    
+    .preset-colors {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .btn-effect {
+        min-height: 60px;
+        padding: 0.75rem;
+    }
+    
+    .btn-effect .btn-icon {
+        font-size: 1.25rem;
+    }
+}
+
+/* 触摸设备优化 */
+.touch-device .btn {
+    min-height: 44px;
+}
+
+.touch-device .slider {
+    height: 12px;
+}
+
+.touch-device .slider::-webkit-slider-thumb {
+    width: 24px;
+    height: 24px;
+}
+
+/* 动画效果 */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.card {
+    animation: fadeIn 0.6s ease-out;
+}
+
+.card:nth-child(1) { animation-delay: 0.1s; }
+.card:nth-child(2) { animation-delay: 0.2s; }
+.card:nth-child(3) { animation-delay: 0.3s; }
+.card:nth-child(4) { animation-delay: 0.4s; }
+
+/* 通知样式 */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 1rem 1.5rem;
+    border-radius: var(--border-radius);
+    color: white;
+    font-weight: 500;
+    z-index: 1000;
+    transform: translateX(100%);
+    transition: var(--transition);
+    box-shadow: var(--shadow-medium);
+}
+
+/* 加载动画 */
+.loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid var(--border-color);
+    border-radius: 50%;
+    border-top-color: var(--primary-color);
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+    </style>
 </head>
 <body>
     <div class="app">
@@ -34,109 +629,124 @@ const char index_html[] = R"rawliteral(
         </header>
 
         <main class="main">
-            <!-- 颜色预览区域 -->
-            <section class="preview-section">
-                <div class="color-preview" id="color-preview">
-                    <div class="preview-circle" id="preview-circle"></div>
-                    <div class="preview-info">
-                        <div class="color-values">
-                            <span>R: <span id="r-val">255</span></span>
-                            <span>G: <span id="g-val">255</span></span>
-                            <span>B: <span id="b-val">255</span></span>
+            <div class="control-panel">
+                <!-- 颜色控制区域 -->
+                <div class="card">
+                    <h2>🎨 颜色控制</h2>
+                    <div class="color-controls">
+                        <div class="color-slider">
+                            <div class="color-label">
+                                <span>红色</span>
+                                <span class="color-value-display" id="r-display">255</span>
+                            </div>
+                            <input type="range" id="r" min="0" max="255" value="255" class="slider">
                         </div>
-                        <div class="brightness-value">
-                            亮度: <span id="brightness-val">50%</span>
+                        
+                        <div class="color-slider">
+                            <div class="color-label">
+                                <span>绿色</span>
+                                <span class="color-value-display" id="g-display">255</span>
+                            </div>
+                            <input type="range" id="g" min="0" max="255" value="255" class="slider">
+                        </div>
+                        
+                        <div class="color-slider">
+                            <div class="color-label">
+                                <span>蓝色</span>
+                                <span class="color-value-display" id="b-display">255</span>
+                            </div>
+                            <input type="range" id="b" min="0" max="255" value="255" class="slider">
+                        </div>
+                        
+                        <div class="color-slider">
+                            <div class="color-label">
+                                <span>亮度</span>
+                                <span class="color-value-display" id="brightness-display">50%</span>
+                            </div>
+                            <input type="range" id="brightness" min="0" max="100" value="50" class="slider">
                         </div>
                     </div>
                 </div>
-            </section>
 
-            <!-- 颜色控制区域 -->
-            <section class="control-section">
-                <h2>🎨 颜色控制</h2>
-                <div class="color-controls">
-                    <div class="color-slider">
-                        <label for="r">
-                            <span class="color-label red">红色</span>
-                            <span class="color-value" id="r-display">255</span>
-                        </label>
-                        <input type="range" id="r" min="0" max="255" value="255" class="slider red-slider">
-                    </div>
-                    
-                    <div class="color-slider">
-                        <label for="g">
-                            <span class="color-label green">绿色</span>
-                            <span class="color-value" id="g-display">255</span>
-                        </label>
-                        <input type="range" id="g" min="0" max="255" value="255" class="slider green-slider">
-                    </div>
-                    
-                    <div class="color-slider">
-                        <label for="b">
-                            <span class="color-label blue">蓝色</span>
-                            <span class="color-value" id="b-display">255</span>
-                        </label>
-                        <input type="range" id="b" min="0" max="255" value="255" class="slider blue-slider">
-                    </div>
-                    
-                    <div class="color-slider">
-                        <label for="brightness">
-                            <span class="color-label">亮度</span>
-                            <span class="color-value" id="brightness-display">50%</span>
-                        </label>
-                        <input type="range" id="brightness" min="0" max="100" value="50" class="slider brightness-slider">
+                <!-- 电源控制区域 -->
+                <div class="card">
+                    <h2>⚡ 电源控制</h2>
+                    <div class="power-control">
+                        <button class="btn btn-power" id="power-btn" onclick="togglePower()">
+                            <span class="btn-icon">💡</span>
+                            <span class="btn-text">开启LED</span>
+                        </button>
                     </div>
                 </div>
-            </section>
 
-            <!-- 电源控制区域 -->
-            <section class="control-section">
-                <h2>⚡ 电源控制</h2>
-                <div class="power-control">
-                    <button class="btn btn-power" id="power-btn" onclick="togglePower()">
-                        <span class="btn-icon">💡</span>
-                        <span class="btn-text">开启LED</span>
-                    </button>
+                <!-- 特效控制区域 -->
+                <div class="card">
+                    <h2>✨ 特效模式</h2>
+                    <div class="effect-controls">
+                        <button class="btn btn-effect" onclick="setEffect('static')">
+                            <span class="btn-icon">🎯</span>
+                            <span class="btn-text">静态</span>
+                        </button>
+                        <button class="btn btn-effect" onclick="setEffect('rainbow')">
+                            <span class="btn-icon">🌈</span>
+                            <span class="btn-text">彩虹</span>
+                        </button>
+                        <button class="btn btn-effect" onclick="setEffect('breathing')">
+                            <span class="btn-icon">🫁</span>
+                            <span class="btn-text">呼吸</span>
+                        </button>
+                        <button class="btn btn-effect" onclick="setEffect('blink')">
+                            <span class="btn-icon">⚡</span>
+                            <span class="btn-text">闪烁</span>
+                        </button>
+                    </div>
                 </div>
-            </section>
 
-            <!-- 特效控制区域 -->
-            <section class="control-section">
-                <h2>✨ 特效模式</h2>
-                <div class="effect-controls">
-                    <button class="btn btn-effect" onclick="setEffect('static')">
-                        <span class="btn-icon">🎯</span>
-                        <span class="btn-text">静态</span>
-                    </button>
-                    <button class="btn btn-effect" onclick="setEffect('rainbow')">
-                        <span class="btn-icon">🌈</span>
-                        <span class="btn-text">彩虹</span>
-                    </button>
-                    <button class="btn btn-effect" onclick="setEffect('breathing')">
-                        <span class="btn-icon">🫁</span>
-                        <span class="btn-text">呼吸</span>
-                    </button>
-                    <button class="btn btn-effect" onclick="setEffect('blink')">
-                        <span class="btn-icon">⚡</span>
-                        <span class="btn-text">闪烁</span>
-                    </button>
+                <!-- 预设颜色区域 -->
+                <div class="card">
+                    <h2>🎨 预设颜色</h2>
+                    <div class="preset-colors">
+                        <button class="preset-btn" style="background: #ff0000" onclick="setPresetColor(255, 0, 0)">红色</button>
+                        <button class="preset-btn" style="background: #00ff00" onclick="setPresetColor(0, 255, 0)">绿色</button>
+                        <button class="preset-btn" style="background: #0000ff" onclick="setPresetColor(0, 0, 255)">蓝色</button>
+                        <button class="preset-btn" style="background: #ffff00" onclick="setPresetColor(255, 255, 0)">黄色</button>
+                        <button class="preset-btn" style="background: #ff00ff" onclick="setPresetColor(255, 0, 255)">紫色</button>
+                        <button class="preset-btn" style="background: #00ffff" onclick="setPresetColor(0, 255, 255)">青色</button>
+                        <button class="preset-btn" style="background: #ff8000" onclick="setPresetColor(255, 128, 0)">橙色</button>
+                        <button class="preset-btn" style="background: #ffffff" onclick="setPresetColor(255, 255, 255)">白色</button>
+                    </div>
                 </div>
-            </section>
+            </div>
 
-            <!-- 预设颜色区域 -->
-            <section class="control-section">
-                <h2>🎨 预设颜色</h2>
-                <div class="preset-colors">
-                    <button class="preset-btn" style="background: #ff0000" onclick="setPresetColor(255, 0, 0)">红色</button>
-                    <button class="preset-btn" style="background: #00ff00" onclick="setPresetColor(0, 255, 0)">绿色</button>
-                    <button class="preset-btn" style="background: #0000ff" onclick="setPresetColor(0, 0, 255)">蓝色</button>
-                    <button class="preset-btn" style="background: #ffff00" onclick="setPresetColor(255, 255, 0)">黄色</button>
-                    <button class="preset-btn" style="background: #ff00ff" onclick="setPresetColor(255, 0, 255)">紫色</button>
-                    <button class="preset-btn" style="background: #00ffff" onclick="setPresetColor(0, 255, 255)">青色</button>
-                    <button class="preset-btn" style="background: #ff8000" onclick="setPresetColor(255, 128, 0)">橙色</button>
-                    <button class="preset-btn" style="background: #ffffff" onclick="setPresetColor(255, 255, 255)">白色</button>
+            <div class="preview-panel">
+                <!-- 颜色预览区域 -->
+                <div class="card">
+                    <h2>🎨 颜色预览</h2>
+                    <div class="preview-section">
+                        <div class="color-preview" id="color-preview">
+                            <div class="preview-circle" id="preview-circle"></div>
+                            <div class="preview-info">
+                                <div class="color-value">
+                                    <h3>R</h3>
+                                    <div class="value" id="r-val">255</div>
+                                </div>
+                                <div class="color-value">
+                                    <h3>G</h3>
+                                    <div class="value" id="g-val">255</div>
+                                </div>
+                                <div class="color-value">
+                                    <h3>B</h3>
+                                    <div class="value" id="b-val">255</div>
+                                </div>
+                                <div class="color-value">
+                                    <h3>亮度</h3>
+                                    <div class="value" id="brightness-val">50%</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </section>
+            </div>
         </main>
 
         <footer class="footer">
@@ -541,27 +1151,80 @@ window.addEventListener('unhandledrejection', function(event) {
 </html>
 )rawliteral";
 
-// 嵌入的CSS文件内容 - 响应式设计，适配PC和H5
+// 嵌入的CSS文件内容 - 现代化设计，深色主题
 const char style_css[] = R"rawliteral(
-/* 全局样式 */
+/* 现代化LED控制器样式 - 重新设计 */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+/* CSS变量定义 */
+:root {
+    --primary-color: #6366f1;
+    --primary-dark: #4f46e5;
+    --primary-light: #a5b4fc;
+    --secondary-color: #ec4899;
+    --accent-color: #06b6d4;
+    --success-color: #10b981;
+    --warning-color: #f59e0b;
+    --error-color: #ef4444;
+    
+    --bg-primary: #0f172a;
+    --bg-secondary: #1e293b;
+    --bg-tertiary: #334155;
+    --bg-card: rgba(30, 41, 59, 0.8);
+    --bg-glass: rgba(255, 255, 255, 0.1);
+    
+    --text-primary: #f8fafc;
+    --text-secondary: #cbd5e1;
+    --text-muted: #94a3b8;
+    
+    --border-color: rgba(148, 163, 184, 0.2);
+    --shadow-light: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --shadow-medium: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    --shadow-heavy: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    
+    --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --gradient-secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --gradient-accent: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --gradient-success: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    
+    --border-radius: 16px;
+    --border-radius-lg: 24px;
+    --border-radius-xl: 32px;
+    
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 全局样式重置 */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
-body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-    min-height: 100vh;
-    color: #333;
-    line-height: 1.6;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    overflow-x: hidden;
-    position: relative;
+*::before,
+*::after {
+    box-sizing: border-box;
 }
 
+/* 基础样式 */
+html {
+    font-size: 16px;
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.6;
+    font-weight: 400;
+    overflow-x: hidden;
+    position: relative;
+    min-height: 100vh;
+}
+
+/* 背景装饰 */
 body::before {
     content: '';
     position: fixed;
@@ -570,9 +1233,9 @@ body::before {
     width: 100%;
     height: 100%;
     background: 
-        radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
-        radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
-        radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.2) 0%, transparent 50%);
+        radial-gradient(circle at 20% 80%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(236, 72, 153, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(6, 182, 212, 0.1) 0%, transparent 50%);
     pointer-events: none;
     z-index: -1;
 }
@@ -583,48 +1246,47 @@ body::before {
 }
 
 ::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--bg-secondary);
     border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.3);
+    background: var(--bg-tertiary);
     border-radius: 4px;
+    transition: var(--transition);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.5);
+    background: var(--primary-color);
 }
 
+/* 主容器 */
 .app {
-    max-width: 800px;
+    max-width: 1200px;
     margin: 0 auto;
-    padding: 20px;
+    padding: 2rem;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    gap: 2rem;
 }
 
 /* 头部样式 */
 .header {
-    background: rgba(255, 255, 255, 0.95);
+    background: var(--bg-glass);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border-radius: 30px;
-    padding: 30px;
-    margin-bottom: 30px;
-    box-shadow: 
-        0 20px 40px rgba(0, 0, 0, 0.1), 
-        0 8px 20px rgba(0, 0, 0, 0.07),
-        0 0 0 1px rgba(255, 255, 255, 0.2);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-xl);
+    padding: 2rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    gap: 1.5rem;
+    box-shadow: var(--shadow-medium);
     position: relative;
     overflow: hidden;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .header::before {
@@ -634,8 +1296,8 @@ body::before {
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-    transition: left 0.5s;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+    transition: left 0.6s ease;
 }
 
 .header:hover::before {
@@ -713,38 +1375,73 @@ body::before {
 /* 主内容区域 */
 .main {
     flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    align-items: start;
 }
 
-/* 控制区域通用样式 */
-.control-section {
-    background: rgba(255, 255, 255, 0.95);
+/* 控制面板 */
+.control-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+/* 预览面板 */
+.preview-panel {
+    position: sticky;
+    top: 2rem;
+}
+
+/* 卡片通用样式 */
+.card {
+    background: var(--bg-card);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border-radius: 30px;
-    padding: 35px;
-    box-shadow: 
-        0 20px 40px rgba(0, 0, 0, 0.1), 
-        0 8px 20px rgba(0, 0, 0, 0.07),
-        0 0 0 1px rgba(255, 255, 255, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-lg);
+    padding: 2rem;
+    box-shadow: var(--shadow-medium);
+    transition: var(--transition);
     position: relative;
     overflow: hidden;
 }
 
-.control-section::before {
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-heavy);
+    border-color: var(--primary-color);
+}
+
+.card::before {
     content: '';
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     height: 3px;
-    background: linear-gradient(90deg, #667eea, #764ba2, #667eea);
+    background: var(--gradient-primary);
     background-size: 200% 100%;
     animation: gradientMove 3s ease-in-out infinite;
+}
+
+.card h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.card h2::before {
+    content: '';
+    width: 4px;
+    height: 1.5rem;
+    background: var(--gradient-primary);
+    border-radius: 2px;
 }
 
 @keyframes gradientMove {
@@ -753,139 +1450,89 @@ body::before {
     100% { background-position: 0% 50%; }
 }
 
-.control-section:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15), 0 10px 20px rgba(0, 0, 0, 0.1);
-}
-
-.control-section h2 {
-    font-size: 1.5rem;
-    font-weight: 700;
-    margin-bottom: 25px;
-    color: #333;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    position: relative;
-}
-
-.control-section h2::after {
-    content: '';
-    position: absolute;
-    bottom: -8px;
-    left: 0;
-    width: 40px;
-    height: 3px;
-    background: linear-gradient(90deg, #667eea, #764ba2);
-    border-radius: 2px;
-}
-
-/* 颜色预览区域 */
+/* 预览区域 */
 .preview-section {
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-radius: 35px;
-    padding: 45px;
-    box-shadow: 
-        0 25px 50px rgba(0, 0, 0, 0.1), 
-        0 10px 25px rgba(0, 0, 0, 0.07),
-        0 0 0 1px rgba(255, 255, 255, 0.2);
     text-align: center;
-    border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.color-preview {
+    margin-bottom: 2rem;
+}
+
+.preview-circle {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    margin: 0 auto 1.5rem;
+    box-shadow: 
+        0 20px 40px rgba(0, 0, 0, 0.3),
+        0 0 0 1px var(--border-color),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    transition: var(--transition);
     position: relative;
     overflow: hidden;
 }
 
-.preview-section::before {
+.preview-circle:hover {
+    transform: scale(1.05);
+    box-shadow: 
+        0 25px 50px rgba(0, 0, 0, 0.4),
+        0 0 0 1px var(--primary-color),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+}
+
+.preview-circle::before {
     content: '';
     position: absolute;
     top: -50%;
     left: -50%;
     width: 200%;
     height: 200%;
-    background: radial-gradient(circle, rgba(102, 126, 234, 0.1) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
     animation: rotate 20s linear infinite;
 }
 
-@keyframes rotate {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-
-.color-preview {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 25px;
-    position: relative;
-    z-index: 1;
-}
-
-.preview-circle {
-    width: 160px;
-    height: 160px;
-    border-radius: 50%;
-    background: rgb(255, 255, 255);
-    border: 8px solid rgba(255, 255, 255, 0.4);
-    box-shadow: 
-        0 20px 40px rgba(0, 0, 0, 0.25), 
-        inset 0 0 30px rgba(255, 255, 255, 0.15),
-        0 0 0 1px rgba(255, 255, 255, 0.1);
-    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-    cursor: pointer;
-}
-
-.preview-circle:hover {
-    transform: scale(1.05);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), inset 0 0 30px rgba(255, 255, 255, 0.2);
-}
-
-.preview-circle::before {
-    content: '';
-    position: absolute;
-    top: -10px;
-    left: -10px;
-    right: -10px;
-    bottom: -10px;
-    border-radius: 50%;
-    background: linear-gradient(45deg, #667eea, #764ba2, #667eea);
-    background-size: 200% 200%;
-    animation: gradientShift 3s ease-in-out infinite;
-    z-index: -1;
-    opacity: 0.3;
-}
-
-@keyframes gradientShift {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
-}
-
 .preview-info {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.color-value {
+    background: var(--bg-tertiary);
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+}
+
+.color-value h3 {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.color-value .value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    font-family: 'Courier New', monospace;
+}
+
+/* 颜色控制区域 */
+.color-controls {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    font-size: 0.9rem;
-    color: #666;
+    gap: 1.5rem;
 }
 
-.color-values {
+.color-slider {
     display: flex;
-    gap: 15px;
-    justify-content: center;
-    flex-wrap: wrap;
-}
-
-.color-values span {
-    font-weight: 600;
-    color: #333;
-}
-
-.brightness-value {
-    font-weight: 600;
-    color: #333;
+    flex-direction: column;
+    gap: 0.75rem;
 }
 
 /* 颜色控制区域 */
@@ -960,61 +1607,66 @@ body::before {
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3), inset 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+.color-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.color-value-display {
+    font-family: 'Courier New', monospace;
+    font-weight: 700;
+    color: var(--text-primary);
+    background: var(--bg-tertiary);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+}
+
+.slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 8px;
+    border-radius: 4px;
+    background: var(--bg-tertiary);
+    outline: none;
+    border: 1px solid var(--border-color);
+    transition: var(--transition);
+}
+
+.slider:hover {
+    border-color: var(--primary-color);
+}
+
 .slider::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #667eea, #764ba2, #f093fb);
+    background: var(--gradient-primary);
     cursor: pointer;
-    box-shadow: 
-        0 6px 20px rgba(102, 126, 234, 0.4), 
-        0 4px 12px rgba(0, 0, 0, 0.2),
-        0 0 0 2px rgba(255, 255, 255, 0.9);
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    border: 2px solid rgba(255, 255, 255, 0.9);
+    box-shadow: var(--shadow-medium);
+    border: 2px solid var(--text-primary);
+    transition: var(--transition);
 }
 
 .slider::-webkit-slider-thumb:hover {
-    transform: scale(1.2);
-    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5), 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-.slider::-webkit-slider-thumb:active {
     transform: scale(1.1);
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.6), 0 1px 4px rgba(0, 0, 0, 0.4);
+    box-shadow: var(--shadow-heavy);
 }
 
 .slider::-moz-range-thumb {
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
-    background: #007bff;
+    background: var(--gradient-primary);
     cursor: pointer;
-    border: none;
-    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
-}
-
-.slider:hover::-webkit-slider-thumb {
-    transform: scale(1.1);
-    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
-}
-
-.red-slider::-webkit-slider-thumb {
-    background: #dc3545;
-}
-
-.green-slider::-webkit-slider-thumb {
-    background: #28a745;
-}
-
-.blue-slider::-webkit-slider-thumb {
-    background: #007bff;
-}
-
-.brightness-slider::-webkit-slider-thumb {
-    background: #ffc107;
+    border: 2px solid var(--text-primary);
+    box-shadow: var(--shadow-medium);
 }
 
 /* 按钮样式 */
@@ -1022,21 +1674,21 @@ body::before {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 12px;
-    padding: 18px 32px;
+    gap: 0.75rem;
+    padding: 1rem 2rem;
     border: none;
-    border-radius: 20px;
-    font-size: 1.1rem;
-    font-weight: 700;
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: var(--transition);
     text-decoration: none;
-    min-height: 56px;
+    min-height: 3rem;
     -webkit-tap-highlight-color: transparent;
     position: relative;
     overflow: hidden;
-    letter-spacing: 0.5px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    letter-spacing: 0.025em;
+    box-shadow: var(--shadow-light);
 }
 
 .btn::before {
@@ -1046,7 +1698,7 @@ body::before {
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
     transition: left 0.5s;
 }
 
@@ -1055,82 +1707,83 @@ body::before {
 }
 
 .btn:hover {
-    transform: translateY(-3px) scale(1.02);
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2), 0 5px 15px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-medium);
 }
 
 .btn:active {
-    transform: translateY(-1px) scale(0.98);
-    transition: all 0.1s ease;
+    transform: translateY(0);
+    transition: var(--transition-fast);
 }
 
 .btn-power {
-    background: linear-gradient(135deg, #28a745, #20c997);
-    color: white;
+    background: var(--gradient-success);
+    color: var(--text-primary);
     width: 100%;
-    font-size: 1.1rem;
+    font-size: 1.125rem;
+    font-weight: 700;
 }
 
 .btn-power:hover {
-    background: linear-gradient(135deg, #218838, #1ea085);
+    background: linear-gradient(135deg, #059669, #0d9488);
 }
 
 .btn-effect {
-    background: linear-gradient(135deg, #007bff, #6610f2);
-    color: white;
+    background: var(--gradient-primary);
+    color: var(--text-primary);
     flex: 1;
-    min-width: 120px;
+    min-width: 8rem;
 }
 
 .btn-effect:hover {
-    background: linear-gradient(135deg, #0056b3, #520dc2);
+    background: linear-gradient(135deg, #4f46e5, #5b21b6);
 }
 
 .btn-effect.active {
-    background: linear-gradient(135deg, #0056b3, #520dc2);
-    transform: scale(0.95);
+    background: linear-gradient(135deg, #4f46e5, #5b21b6);
+    transform: scale(0.98);
 }
 
 .btn-icon {
-    font-size: 1.2rem;
+    font-size: 1.25rem;
 }
 
 .btn-text {
-    font-size: 0.9rem;
+    font-size: 0.875rem;
 }
 
 /* 特效控制区域 */
 .effect-controls {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+    gap: 1rem;
 }
 
 /* 预设颜色区域 */
 .preset-colors {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(5rem, 1fr));
+    gap: 1rem;
 }
 
 .preset-btn {
-    padding: 15px 12px;
+    padding: 1rem 0.75rem;
     border: none;
-    border-radius: 16px;
-    color: white;
-    font-weight: 700;
+    border-radius: var(--border-radius);
+    color: var(--text-primary);
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
-    min-height: 52px;
+    transition: var(--transition);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    min-height: 3rem;
     display: flex;
     align-items: center;
     justify-content: center;
     -webkit-tap-highlight-color: transparent;
     position: relative;
     overflow: hidden;
-    font-size: 0.9rem;
-    letter-spacing: 0.5px;
+    font-size: 0.875rem;
+    letter-spacing: 0.025em;
 }
 
 .preset-btn::before {
@@ -1140,7 +1793,7 @@ body::before {
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
     transition: left 0.5s;
 }
 
@@ -1149,54 +1802,87 @@ body::before {
 }
 
 .preset-btn:hover {
-    transform: translateY(-3px) scale(1.05);
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4), 0 6px 20px rgba(0, 0, 0, 0.3);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-medium);
 }
 
 .preset-btn:active {
-    transform: translateY(-1px) scale(0.98);
-    transition: all 0.1s ease;
+    transform: translateY(0);
+    transition: var(--transition-fast);
 }
 
 /* 电源控制区域 */
 .power-control {
     display: flex;
     justify-content: center;
+    margin-top: 1rem;
 }
 
 /* 底部样式 */
 .footer {
     text-align: center;
-    padding: 20px;
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 0.9rem;
+    padding: 2rem;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    border-top: 1px solid var(--border-color);
+    margin-top: 2rem;
 }
 
 /* 通知样式 */
 .notification {
     position: fixed;
-    top: 20px;
-    right: 20px;
-    padding: 12px 20px;
-    border-radius: 8px;
-    color: white;
+    top: 1.5rem;
+    right: 1.5rem;
+    padding: 1rem 1.5rem;
+    border-radius: var(--border-radius);
+    color: var(--text-primary);
     font-weight: 600;
     z-index: 1000;
     transform: translateX(100%);
-    transition: transform 0.3s ease;
-    max-width: 300px;
+    transition: var(--transition);
+    max-width: 20rem;
     word-wrap: break-word;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--shadow-medium);
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
 }
 
-/* 响应式设计 - PC设备 */
-@media (min-width: 769px) {
+/* 响应式设计 - 平板设备 */
+@media (max-width: 1024px) {
+    .main {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    
+    .preview-panel {
+        position: static;
+    }
+    
+    .preview-circle {
+        width: 180px;
+        height: 180px;
+    }
+}
+
+/* 响应式设计 - 手机设备 */
+@media (max-width: 768px) {
     .app {
-        padding: 30px;
+        padding: 1rem;
+    }
+    
+    .header {
+        padding: 1.5rem;
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
     }
     
     .header h1 {
-        font-size: 2rem;
+        font-size: 1.75rem;
+    }
+    
+    .card {
+        padding: 1.5rem;
     }
     
     .preview-circle {
@@ -1204,143 +1890,82 @@ body::before {
         height: 150px;
     }
     
-    .btn {
-        min-height: 52px;
+    .effect-controls {
+        grid-template-columns: repeat(2, 1fr);
     }
     
-    .slider::-webkit-slider-thumb {
-        width: 24px;
-        height: 24px;
+    .preset-colors {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .preview-info {
+        grid-template-columns: repeat(2, 1fr);
     }
 }
 
-/* 响应式设计 - 平板设备 */
-@media (max-width: 768px) and (min-width: 481px) {
+@media (max-width: 480px) {
     .app {
-        padding: 15px;
+        padding: 0.75rem;
     }
     
     .header {
-        padding: 15px;
-        flex-direction: column;
-        gap: 15px;
-        text-align: center;
+        padding: 1rem;
+        border-radius: var(--border-radius-lg);
     }
     
     .header h1 {
         font-size: 1.5rem;
     }
     
-    .control-section {
-        padding: 20px;
-    }
-    
-    .preview-section {
-        padding: 25px;
+    .card {
+        padding: 1rem;
+        border-radius: var(--border-radius);
     }
     
     .preview-circle {
-        width: 100px;
-        height: 100px;
-    }
-    
-    .effect-controls {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    
-    .preset-colors {
-        grid-template-columns: repeat(4, 1fr);
-    }
-}
-
-/* 响应式设计 - 手机设备 */
-@media (max-width: 480px) {
-    .app {
-        padding: 12px;
-    }
-    
-    .header {
-        padding: 20px;
-        border-radius: 25px;
-    }
-    
-    .header h1 {
-        font-size: 1.4rem;
-    }
-    
-    .control-section {
-        padding: 20px;
-        border-radius: 25px;
-    }
-    
-    .preview-section {
-        padding: 25px;
-        border-radius: 25px;
-    }
-    
-    .preview-circle {
-        width: 100px;
-        height: 100px;
-        border-width: 6px;
+        width: 120px;
+        height: 120px;
     }
     
     .effect-controls {
         grid-template-columns: 1fr;
-        gap: 15px;
+        gap: 0.75rem;
     }
     
     .preset-colors {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 15px;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
     }
     
-    .color-values {
-        flex-direction: column;
-        gap: 8px;
+    .preview-info {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
     }
     
     .btn {
-        padding: 12px 20px;
-        font-size: 0.9rem;
-        min-height: 48px;
-        border-radius: 16px;
-    }
-    
-    .btn-icon {
-        font-size: 1.1rem;
-    }
-    
-    .btn-text {
-        font-size: 0.8rem;
-    }
-    
-    .slider {
-        height: 16px;
+        padding: 0.75rem 1.5rem;
+        font-size: 0.875rem;
+        min-height: 2.5rem;
     }
     
     .slider::-webkit-slider-thumb {
-        width: 24px;
-        height: 24px;
+        width: 20px;
+        height: 20px;
     }
     
     .notification {
-        right: 12px;
-        left: 12px;
+        right: 0.75rem;
+        left: 0.75rem;
         max-width: none;
-        border-radius: 12px;
-    }
-    
-    .status-indicator {
-        padding: 12px 20px;
-        border-radius: 20px;
+        border-radius: var(--border-radius);
     }
 }
 
 /* 触摸设备优化 */
 @media (hover: none) and (pointer: coarse) {
     .btn {
-        min-height: 48px;
-        padding: 16px 24px;
+        min-height: 3rem;
+        padding: 1rem 1.5rem;
     }
     
     .slider::-webkit-slider-thumb {
@@ -1349,96 +1974,34 @@ body::before {
     }
     
     .preset-btn {
-        min-height: 48px;
-        padding: 16px 20px;
+        min-height: 3rem;
+        padding: 1rem 1.25rem;
     }
     
     /* 增加触摸目标间距 */
     .color-slider {
-        gap: 16px;
+        gap: 1rem;
     }
     
     .effect-controls {
-        gap: 20px;
+        gap: 1.25rem;
     }
     
     .preset-colors {
-        gap: 20px;
+        gap: 1.25rem;
     }
     
     /* 触摸反馈 */
     .btn:active,
     .preset-btn:active {
-        transform: scale(0.95);
-        transition: all 0.1s ease;
+        transform: scale(0.98);
+        transition: var(--transition-fast);
     }
     
     /* 触摸高亮 */
     .slider:active::-webkit-slider-thumb {
         transform: scale(1.1);
-        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
-    }
-}
-
-/* 深色模式支持 */
-@media (prefers-color-scheme: dark) {
-    body {
-        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-    }
-    
-    body::before {
-        background: 
-            radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.2) 0%, transparent 50%),
-            radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.2) 0%, transparent 50%),
-            radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.15) 0%, transparent 50%);
-    }
-    
-    .control-section,
-    .preview-section,
-    .header {
-        background: rgba(255, 255, 255, 0.08);
-        color: #fff;
-        border-color: rgba(255, 255, 255, 0.15);
-    }
-    
-    .control-section h2,
-    .header h1 {
-        color: #fff;
-    }
-    
-    .color-slider label {
-        color: #fff;
-    }
-    
-    .color-value {
-        color: #4fc3f7;
-    }
-    
-    .status-indicator {
-        background: rgba(255, 255, 255, 0.08);
-        border-color: rgba(255, 255, 255, 0.15);
-        color: #fff;
-    }
-    
-    .slider {
-        background: linear-gradient(90deg, #2c3e50 0%, #34495e 50%, #2c3e50 100%);
-        border-color: rgba(255, 255, 255, 0.2);
-    }
-    
-    .slider::-webkit-slider-thumb {
-        background: linear-gradient(135deg, #667eea, #764ba2, #f093fb);
-        border-color: rgba(255, 255, 255, 0.8);
-    }
-}
-
-/* 高对比度模式支持 */
-@media (prefers-contrast: high) {
-    .btn {
-        border: 2px solid #000;
-    }
-    
-    .slider {
-        border: 1px solid #000;
+        box-shadow: var(--shadow-heavy);
     }
 }
 
@@ -1455,7 +2018,7 @@ body::before {
 @keyframes fadeInUp {
     from {
         opacity: 0;
-        transform: translateY(40px) scale(0.95);
+        transform: translateY(2rem) scale(0.95);
     }
     to {
         opacity: 1;
@@ -1463,128 +2026,68 @@ body::before {
     }
 }
 
-@keyframes fadeInLeft {
-    from {
-        opacity: 0;
-        transform: translateX(-40px) scale(0.95);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0) scale(1);
-    }
+.card {
+    animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-@keyframes fadeInRight {
-    from {
-        opacity: 0;
-        transform: translateX(40px) scale(0.95);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0) scale(1);
-    }
-}
-
-.control-section {
-    animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.control-section:nth-child(2) { animation-delay: 0.15s; }
-.control-section:nth-child(3) { animation-delay: 0.3s; }
-.control-section:nth-child(4) { animation-delay: 0.45s; }
-.control-section:nth-child(5) { animation-delay: 0.6s; }
-
-.preview-section {
-    animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-    animation-delay: 0.1s;
-}
+.card:nth-child(2) { animation-delay: 0.1s; }
+.card:nth-child(3) { animation-delay: 0.2s; }
+.card:nth-child(4) { animation-delay: 0.3s; }
 
 .header {
-    animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* 浮动动画 */
-@keyframes float {
-    0%, 100% { 
-        transform: translateY(0px) rotate(0deg); 
-    }
-    25% { 
-        transform: translateY(-8px) rotate(1deg); 
-    }
-    50% { 
-        transform: translateY(-12px) rotate(0deg); 
-    }
-    75% { 
-        transform: translateY(-8px) rotate(-1deg); 
-    }
+/* 渐变移动动画 */
+@keyframes gradientMove {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
 }
 
-.preview-circle {
-    animation: float 8s ease-in-out infinite;
-}
-
-/* 新增：微妙的呼吸效果 */
-@keyframes subtleBreath {
-    0%, 100% { 
-        transform: scale(1);
-        opacity: 1;
-    }
-    50% { 
-        transform: scale(1.02);
-        opacity: 0.95;
-    }
-}
-
-.preview-circle:hover {
-    animation: subtleBreath 2s ease-in-out infinite;
+/* 旋转动画 */
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
 
 /* 脉冲动画 */
-@keyframes pulse-glow {
+@keyframes pulse {
     0%, 100% { 
-        box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
+        opacity: 1; 
+        transform: scale(1); 
     }
     50% { 
-        box-shadow: 0 0 30px rgba(102, 126, 234, 0.6);
+        opacity: 0.7; 
+        transform: scale(1.1); 
     }
 }
 
-@keyframes pulse-ripple {
+@keyframes ripple {
     0% { 
-        transform: scale(1);
-        opacity: 1;
+        transform: scale(1); 
+        opacity: 1; 
     }
     100% { 
-        transform: scale(2.5);
-        opacity: 0;
+        transform: scale(2); 
+        opacity: 0; 
     }
 }
 
 .status-dot {
-    animation: pulse 2s infinite, pulse-glow 3s ease-in-out infinite;
+    animation: pulse 2s infinite;
 }
 
-.status-dot::before {
+.status-dot::after {
     content: '';
     position: absolute;
-    top: -4px;
-    left: -4px;
-    right: -4px;
-    bottom: -4px;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
     border-radius: 50%;
-    background: rgba(40, 167, 69, 0.2);
-    animation: pulse-ripple 2s ease-out infinite;
-}
-
-/* 渐变文字动画 */
-@keyframes textShine {
-    0% { background-position: 0% 50%; }
-    100% { background-position: 100% 50%; }
-}
-
-.header h1 {
-    background-size: 200% 200%;
-    animation: textShine 3s ease-in-out infinite;
+    background: rgba(40, 167, 69, 0.3);
+    animation: ripple 2s infinite;
 }
 
 /* 新增：悬浮卡片效果 */

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#6366f1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="LED控制器">
+    <title>ESP32-C3 LED控制器</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌈</text></svg>">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="app">
+        <header class="header">
+            <h1>ESP32-C3 LED控制器</h1>
+            <div class="status-indicator" id="status-indicator">
+                <span class="status-dot"></span>
+                <span class="status-text">已连接</span>
+            </div>
+        </header>
+
+        <main class="main">
+            <!-- 左侧控制区域 -->
+            <div class="control-panel">
+                <!-- 颜色控制区域 -->
+                <div class="card">
+                    <h2>🎨 颜色控制</h2>
+                    <div class="color-controls">
+                        <div class="color-slider">
+                            <label for="r">
+                                <span class="color-label red">红色</span>
+                                <span class="color-value-display" id="r-display">255</span>
+                            </label>
+                            <input type="range" id="r" min="0" max="255" value="255" class="slider red-slider">
+                        </div>
+                        
+                        <div class="color-slider">
+                            <label for="g">
+                                <span class="color-label green">绿色</span>
+                                <span class="color-value-display" id="g-display">255</span>
+                            </label>
+                            <input type="range" id="g" min="0" max="255" value="255" class="slider green-slider">
+                        </div>
+                        
+                        <div class="color-slider">
+                            <label for="b">
+                                <span class="color-label blue">蓝色</span>
+                                <span class="color-value-display" id="b-display">255</span>
+                            </label>
+                            <input type="range" id="b" min="0" max="255" value="255" class="slider blue-slider">
+                        </div>
+                        
+                        <div class="color-slider">
+                            <label for="brightness">
+                                <span class="color-label">亮度</span>
+                                <span class="color-value-display" id="brightness-display">50%</span>
+                            </label>
+                            <input type="range" id="brightness" min="0" max="100" value="50" class="slider brightness-slider">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 电源控制区域 -->
+                <div class="card">
+                    <h2>⚡ 电源控制</h2>
+                    <div class="power-control">
+                        <button class="btn btn-power" id="power-btn" onclick="togglePower()">
+                            <span class="btn-icon">💡</span>
+                            <span class="btn-text">开启LED</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 特效控制区域 -->
+                <div class="card">
+                    <h2>✨ 特效控制</h2>
+                    <div class="effect-controls">
+                        <button class="btn btn-effect active" onclick="setEffect('static')">
+                            <span class="btn-icon">🌟</span>
+                            <span class="btn-text">静态</span>
+                        </button>
+                        <button class="btn btn-effect" onclick="setEffect('rainbow')">
+                            <span class="btn-icon">🌈</span>
+                            <span class="btn-text">彩虹</span>
+                        </button>
+                        <button class="btn btn-effect" onclick="setEffect('breathing')">
+                            <span class="btn-icon">💨</span>
+                            <span class="btn-text">呼吸</span>
+                        </button>
+                        <button class="btn btn-effect" onclick="setEffect('blink')">
+                            <span class="btn-icon">⚡</span>
+                            <span class="btn-text">闪烁</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 预设颜色区域 -->
+                <div class="card">
+                    <h2>🎯 预设颜色</h2>
+                    <div class="preset-colors">
+                        <button class="preset-btn" style="background: #ef4444;" onclick="setPresetColor(255, 0, 0)">红色</button>
+                        <button class="preset-btn" style="background: #10b981;" onclick="setPresetColor(0, 255, 0)">绿色</button>
+                        <button class="preset-btn" style="background: #06b6d4;" onclick="setPresetColor(0, 0, 255)">蓝色</button>
+                        <button class="preset-btn" style="background: #f59e0b;" onclick="setPresetColor(255, 255, 0)">黄色</button>
+                        <button class="preset-btn" style="background: #ec4899;" onclick="setPresetColor(255, 0, 255)">紫色</button>
+                        <button class="preset-btn" style="background: #06b6d4;" onclick="setPresetColor(0, 255, 255)">青色</button>
+                        <button class="preset-btn" style="background: #f97316;" onclick="setPresetColor(255, 128, 0)">橙色</button>
+                        <button class="preset-btn" style="background: #f8fafc; color: #0f172a;" onclick="setPresetColor(255, 255, 255)">白色</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧预览区域 -->
+            <div class="preview-panel">
+                <!-- 颜色预览区域 -->
+                <div class="card preview-section">
+                    <h2>🎨 颜色预览</h2>
+                    <div class="color-preview">
+                        <div class="preview-circle" id="preview-circle"></div>
+                        <div class="preview-info">
+                            <div class="color-value">
+                                <span>红色</span>
+                                <strong id="r-val">255</strong>
+                            </div>
+                            <div class="color-value">
+                                <span>绿色</span>
+                                <strong id="g-val">255</strong>
+                            </div>
+                            <div class="color-value">
+                                <span>蓝色</span>
+                                <strong id="b-val">255</strong>
+                            </div>
+                            <div class="color-value">
+                                <span>亮度</span>
+                                <strong id="brightness-val">50%</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>ESP32-C3 WiFi LED Web控制器 v2.0 - 现代化设计</p>
+        </footer>
+    </div>
+
+    <script src="/script.js"></script>
+</body>
+</html>
