@@ -40,7 +40,6 @@
 #include "wifi_manager.h"
 #include "led_controller.h"
 #include "web_server.h"
-#include "api_handlers.h"
 
 static const char *TAG = "ESP32C3_MAIN";
 
@@ -182,20 +181,20 @@ void app_main(void)
     ESP_LOGI(TAG, "WiFi manager initialized");
     
     // 5. 启动Web服务器
-    g_server = web_server_start();
-    if (g_server) {
-        ESP_LOGI(TAG, "Web server started successfully");
-        const char *ip = wifi_get_ip_string();
-        bool have_ip = (ip && strlen(ip) > 0 && strcmp(ip, "0.0.0.0") != 0);
-        ESP_LOGI(TAG, "Access URLs:");
-        ESP_LOGI(TAG, "  - AP Mode: http://192.168.4.1");
-        if (have_ip) {
-            ESP_LOGI(TAG, "  - STA Mode: http://%s", ip);
-        } else {
-            ESP_LOGI(TAG, "  - STA Mode: waiting for IP ...");
-        }
-    } else {
+    ESP_LOGI(TAG, "Starting web server...");
+    if (web_server_start() != ESP_OK) {
         ESP_LOGE(TAG, "Failed to start web server");
+        return;
+    }
+    ESP_LOGI(TAG, "Web server started successfully");
+    const char *ip = wifi_get_ip_string();
+    bool have_ip = (ip && strlen(ip) > 0 && strcmp(ip, "0.0.0.0") != 0);
+    ESP_LOGI(TAG, "Access URLs:");
+    ESP_LOGI(TAG, "  - AP Mode: http://192.168.4.1");
+    if (have_ip) {
+        ESP_LOGI(TAG, "  - STA Mode: http://%s", ip);
+    } else {
+        ESP_LOGI(TAG, "  - STA Mode: waiting for IP ...");
     }
     
     // 6. 创建系统状态定时器

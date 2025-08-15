@@ -7,6 +7,8 @@ idf_component_register(
         "led_controller.c"
         "web_server.c"
         "api_handlers.c"
+        "web_files.c"
+        "${IDF_PATH}/components/lwip/lwip/src/core/ipv4/ip4_napt.c"
     INCLUDE_DIRS 
         "."
         "include"

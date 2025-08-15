@@ -6,6 +6,9 @@ cmake_minimum_required(VERSION 3.16)
 # 设置目标芯片
 set(IDF_TARGET esp32c3)
 
+# 设置分区表文件 - 必须在include之前设置
+set(PARTITION_TABLE_FILE "partitions.csv")
+
 # 项目信息
 set(PROJECT_NAME "esp32c3_wifi_led_controller")
 set(PROJECT_VER "2.0.0")

@@ -119,7 +119,7 @@ const char* wifi_get_ip_string(void);
  * @param mac MAC地址缓冲区 (6 bytes)
  * @return ESP_OK on success
  */
-esp_err_t wifi_get_mac_address(uint8_t* mac);
+esp_err_t wifi_get_mac_address(uint8_t* mac, wifi_interface_t ifx);
 
 /**
  * @brief 扫描WiFi网络

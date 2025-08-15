@@ -11,6 +11,8 @@
 #include "nvs.h"
 #include "freertos/event_groups.h"
 #include <string.h>
+#include "esp_mac.h" // Required for MAC2STR and MACSTR
+#include "lwip/lwip_napt.h"
 
 static const char *TAG = "WIFI_MANAGER";
 
@@ -106,6 +108,14 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
             }
         }
         
+        // 启用NAT功能 - 当STA连接成功后
+        esp_netif_ip_info_t ap_ip_info;
+        if (esp_netif_get_ip_info(s_netif_ap, &ap_ip_info) == ESP_OK) {
+            ip_napt_enable(ap_ip_info.ip.addr, 1);
+            ESP_LOGI(TAG, "🌐 NAT enabled - devices connected to hotspot can now access internet");
+            ESP_LOGI(TAG, "📱 Hotspot IP: " IPSTR, IP2STR(&ap_ip_info.ip));
+        }
+        
         if (s_event_callback) {
             s_event_callback(WIFI_MANAGER_EVENT_STA_CONNECTED, event_data);
         }
@@ -132,6 +142,7 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
         wifi_event_ap_staconnected_t* event = (wifi_event_ap_staconnected_t*) event_data;
         ESP_LOGI(TAG, "station "MACSTR" joined, AID=%d",
                  MAC2STR(event->mac), event->aid);
+        ESP_LOGI(TAG, "📱 Device connected to hotspot - NAT should provide internet access");
         if (s_event_callback) {
             s_event_callback(WIFI_MANAGER_EVENT_STA_JOINED, event_data);
         }
@@ -311,6 +322,15 @@ esp_err_t wifi_manager_init(void)
     s_netif_sta = esp_netif_create_default_wifi_sta();
     s_netif_ap = esp_netif_create_default_wifi_ap();
     
+    // 为AP接口设置静态IP (确保NAT的IP)
+    esp_netif_ip_info_t ap_ip_info;
+    IP4_ADDR(&ap_ip_info.ip, 192, 168, 4, 1);    // AP IP: 192.168.4.1
+    IP4_ADDR(&ap_ip_info.gw, 192, 168, 4, 1);    // Gateway: 192.168.4.1
+    IP4_ADDR(&ap_ip_info.netmask, 255, 255, 255, 0); // Netmask: 255.255.255.0
+    ESP_ERROR_CHECK(esp_netif_dhcps_stop(s_netif_ap)); // 停止默认DHCP服务器
+    ESP_ERROR_CHECK(esp_netif_set_ip_info(s_netif_ap, &ap_ip_info));
+    ESP_ERROR_CHECK(esp_netif_dhcps_start(s_netif_ap)); // 启动配置后的DHCP服务器
+    
     // 初始化WiFi
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
@@ -323,6 +343,10 @@ esp_err_t wifi_manager_init(void)
     
     // 设置WiFi模式 - AP+STA模式
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
+    
+    // 启用IP转发和NAT
+    ip_napt_enable(ap_ip_info.ip.addr, 1);
+    ESP_LOGI(TAG, "IP forwarding and NAT enabled for AP");
     
     // 配置STA模式
     char sta_ssid[WIFI_SSID_MAX_LEN] = {0};
