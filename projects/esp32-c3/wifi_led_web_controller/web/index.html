@@ -74,6 +74,26 @@
                     </div>
                 </div>
 
+                <!-- WiFi热点控制区域 -->
+                <div class="card">
+                    <h2>📶 WiFi热点控制</h2>
+                    <div class="wifi-control">
+                        <div class="wifi-status">
+                            <span class="status-label">热点状态:</span>
+                            <span class="status-value disabled" id="ap-status">已关闭</span>
+                        </div>
+                        <button class="btn btn-wifi" id="ap-btn" onclick="toggleAP()">
+                            <span class="btn-icon">📡</span>
+                            <span class="btn-text">开启热点</span>
+                        </button>
+                        <div class="wifi-info" id="wifi-info" style="display: none;">
+                            <p><strong>热点名称:</strong> <span id="ap-ssid">ESP32C3-LED-Controller</span></p>
+                            <p><strong>热点密码:</strong> <span id="ap-password">12345678</span></p>
+                            <p><strong>热点IP:</strong> <span id="ap-ip">192.168.4.1</span></p>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- 特效控制区域 -->
                 <div class="card">
                     <h2>✨ 特效控制</h2>

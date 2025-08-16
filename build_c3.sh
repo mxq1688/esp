@@ -6,7 +6,7 @@ set -e
 # 定义ESP-IDF路径和项目路径
 ESP_IDF_PATH="/Users/meng/stu/esp/esp-idf"
 PROJECT_PATH="/Users/meng/stu/esp/projects/esp32-c3/wifi_led_web_controller"
-SERIAL_PORT="/dev/cu.usbmodem1101" # 请根据实际情况修改此端口
+SERIAL_PORT="/dev/cu.usbmodem1101" # ESP32-C3设备端口
 BAUD_RATE="115200"
 
 echo "--- 激活ESP-IDF环境 ---"

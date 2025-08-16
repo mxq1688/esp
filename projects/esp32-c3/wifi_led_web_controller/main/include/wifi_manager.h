@@ -85,6 +85,13 @@ esp_err_t wifi_connect_sta(const char* ssid, const char* password, bool save_to_
 esp_err_t wifi_start_ap(const char* ssid, const char* password);
 
 /**
+ * @brief 启用或禁用AP模式
+ * @param enable true启用AP模式，false禁用AP模式
+ * @return ESP_OK on success
+ */
+esp_err_t wifi_enable_ap_mode(bool enable);
+
+/**
  * @brief 停止WiFi连接
  * @return ESP_OK on success
  */

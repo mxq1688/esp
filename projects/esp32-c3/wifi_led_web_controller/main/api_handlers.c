@@ -18,6 +18,7 @@
 #include "led_controller.h"
 #include "web_files.h"
 #include "web_server.h"
+#include "wifi_manager.h"
 
 static const char *TAG = "API_HANDLERS";
 
@@ -30,37 +31,7 @@ static esp_err_t root_get_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
-static esp_err_t style_css_get_handler(httpd_req_t *req)
-{
-    httpd_resp_set_type(req, "text/css");
-    httpd_resp_set_hdr(req, "Content-Encoding", "identity");
-    httpd_resp_send(req, (const char *)style_css, get_style_css_size());
-    return ESP_OK;
-}
 
-static esp_err_t script_js_get_handler(httpd_req_t *req)
-{
-    httpd_resp_set_type(req, "application/javascript");
-    httpd_resp_set_hdr(req, "Content-Encoding", "identity");
-    httpd_resp_send(req, (const char *)script_js, get_script_js_size());
-    return ESP_OK;
-}
-
-static esp_err_t manifest_json_get_handler(httpd_req_t *req)
-{
-    httpd_resp_set_type(req, "application/json");
-    httpd_resp_set_hdr(req, "Content-Encoding", "identity");
-    httpd_resp_send(req, (const char *)manifest_json, get_manifest_json_size());
-    return ESP_OK;
-}
-
-static esp_err_t sw_js_get_handler(httpd_req_t *req)
-{
-    httpd_resp_set_type(req, "application/javascript");
-    httpd_resp_set_hdr(req, "Content-Encoding", "identity");
-    httpd_resp_send(req, (const char *)sw_js, get_sw_js_size());
-    return ESP_OK;
-}
 
 // CORS预检请求处理器
 esp_err_t api_options_handler(httpd_req_t *req)
@@ -189,35 +160,70 @@ esp_err_t api_led_effect_handler(httpd_req_t *req)
     return web_server_send_error_response(req, HTTPD_400_BAD_REQUEST, "Invalid effect value");
 }
 
+// AP模式控制API
+esp_err_t api_ap_mode_handler(httpd_req_t *req)
+{
+    char buffer[256];
+    cJSON *json = (cJSON*)web_server_parse_json_body(req, buffer, sizeof(buffer));
+    if (!json) {
+        return web_server_send_error_response(req, HTTPD_400_BAD_REQUEST, "Invalid JSON");
+    }
+
+    cJSON *enable = cJSON_GetObjectItem(json, "enable");
+    if (enable && cJSON_IsBool(enable)) {
+        bool ap_enable = cJSON_IsTrue(enable);
+        
+        // 调用WiFi管理器启用/禁用AP模式
+        esp_err_t result = wifi_enable_ap_mode(ap_enable);
+        
+        cJSON *response = cJSON_CreateObject();
+        if (result == ESP_OK) {
+            cJSON_AddStringToObject(response, "status", "success");
+            cJSON_AddStringToObject(response, "message", ap_enable ? "AP mode enabled" : "AP mode disabled");
+            cJSON_AddBoolToObject(response, "ap_enabled", ap_enable);
+        } else {
+            cJSON_AddStringToObject(response, "status", "error");
+            cJSON_AddStringToObject(response, "message", "Failed to change AP mode");
+            cJSON_AddStringToObject(response, "error_code", esp_err_to_name(result));
+            ESP_LOGE(TAG, "AP mode change failed: %s", esp_err_to_name(result));
+        }
+        
+        esp_err_t ret = web_server_send_json_response(req, response);
+        cJSON_Delete(response);
+        cJSON_Delete(json);
+        return ret;
+    }
+
+    cJSON_Delete(json);
+    return web_server_send_error_response(req, HTTPD_400_BAD_REQUEST, "Invalid enable value");
+}
+
+// AP状态查询API
+esp_err_t api_ap_status_handler(httpd_req_t *req)
+{
+    cJSON *json = cJSON_CreateObject();
+    if (!json) {
+        return ESP_FAIL;
+    }
+
+    // 添加AP状态信息
+    cJSON_AddStringToObject(json, "status", "ok");
+    cJSON_AddBoolToObject(json, "ap_enabled", wifi_is_ap_mode());
+    cJSON_AddStringToObject(json, "ap_ip", wifi_get_ip_string());
+    cJSON_AddStringToObject(json, "sta_ip", wifi_get_ip_string());
+
+    esp_err_t ret = web_server_send_json_response(req, json);
+    cJSON_Delete(json);
+    return ret;
+}
+
 // 根路径处理器
 esp_err_t api_root_handler(httpd_req_t *req)
 {
     return root_get_handler(req);
 }
 
-// CSS文件处理器
-esp_err_t api_style_handler(httpd_req_t *req)
-{
-    return style_css_get_handler(req);
-}
 
-// JavaScript文件处理器
-esp_err_t api_script_handler(httpd_req_t *req)
-{
-    return script_js_get_handler(req);
-}
-
-// Manifest文件处理器
-esp_err_t api_manifest_handler(httpd_req_t *req)
-{
-    return manifest_json_get_handler(req);
-}
-
-// Service Worker文件处理器
-esp_err_t api_sw_handler(httpd_req_t *req)
-{
-    return sw_js_get_handler(req);
-}
 
 // 错误响应创建函数
 cJSON* api_create_error_response(api_error_code_t error_code, const char* message)

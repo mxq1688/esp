@@ -13,14 +13,12 @@
 
 // 前向声明API处理器
 esp_err_t api_root_handler(httpd_req_t *req);
-esp_err_t api_style_handler(httpd_req_t *req);
-esp_err_t api_script_handler(httpd_req_t *req);
-esp_err_t api_manifest_handler(httpd_req_t *req);
-esp_err_t api_sw_handler(httpd_req_t *req);
 esp_err_t api_status_handler(httpd_req_t *req);
 esp_err_t api_led_color_handler(httpd_req_t *req);
 esp_err_t api_led_power_handler(httpd_req_t *req);
 esp_err_t api_led_effect_handler(httpd_req_t *req);
+esp_err_t api_ap_mode_handler(httpd_req_t *req);
+esp_err_t api_ap_status_handler(httpd_req_t *req);
 esp_err_t api_options_handler(httpd_req_t *req);
 
 static const char *TAG = "WEB_SERVER";
@@ -64,37 +62,7 @@ esp_err_t web_server_register_handlers(httpd_handle_t server)
     };
     httpd_register_uri_handler(server, &root_uri);
 
-    httpd_uri_t style_uri = {
-        .uri = "/style.css",
-        .method = HTTP_GET,
-        .handler = api_style_handler,
-        .user_ctx = NULL
-    };
-    httpd_register_uri_handler(server, &style_uri);
 
-    httpd_uri_t script_uri = {
-        .uri = "/script.js",
-        .method = HTTP_GET,
-        .handler = api_script_handler,
-        .user_ctx = NULL
-    };
-    httpd_register_uri_handler(server, &script_uri);
-
-    httpd_uri_t manifest_uri = {
-        .uri = "/manifest.json",
-        .method = HTTP_GET,
-        .handler = api_manifest_handler,
-        .user_ctx = NULL
-    };
-    httpd_register_uri_handler(server, &manifest_uri);
-
-    httpd_uri_t sw_uri = {
-        .uri = "/sw.js",
-        .method = HTTP_GET,
-        .handler = api_sw_handler,
-        .user_ctx = NULL
-    };
-    httpd_register_uri_handler(server, &sw_uri);
 
     // API处理器
     httpd_uri_t status_uri = {
@@ -128,6 +96,23 @@ esp_err_t web_server_register_handlers(httpd_handle_t server)
         .user_ctx = NULL
     };
     httpd_register_uri_handler(server, &led_effect_uri);
+
+    // AP模式控制API
+    httpd_uri_t ap_mode_uri = {
+        .uri = "/api/ap-mode",
+        .method = HTTP_POST,
+        .handler = api_ap_mode_handler,
+        .user_ctx = NULL
+    };
+    httpd_register_uri_handler(server, &ap_mode_uri);
+
+    httpd_uri_t ap_status_uri = {
+        .uri = "/api/ap-status",
+        .method = HTTP_GET,
+        .handler = api_ap_status_handler,
+        .user_ctx = NULL
+    };
+    httpd_register_uri_handler(server, &ap_status_uri);
 
     // CORS预检请求
     httpd_uri_t options_uri = {

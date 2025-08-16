@@ -5,6 +5,9 @@ let currentBrightness = 50;
 let isConnected = true;
 let isTouchDevice = false;
 
+// AP模式控制 - 默认关闭
+let apEnabled = false;
+
 // 初始化
 document.addEventListener('DOMContentLoaded', function() {
     detectDeviceType();
@@ -34,6 +37,12 @@ function initializeApp() {
     
     // 添加PWA支持
     setupPWA();
+    
+    // 获取AP状态
+    getAPStatus();
+    
+    // 定期更新AP状态
+    setInterval(getAPStatus, 10000); // 每10秒更新一次
 }
 
 // 设置PWA
@@ -467,3 +476,70 @@ document.addEventListener('mousedown', function() {
 document.addEventListener('touchstart', function() {
     document.body.classList.remove('keyboard-navigation');
 });
+
+// AP模式控制
+async function toggleAP() {
+    try {
+        const response = await fetch('/api/ap-mode', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                enable: !apEnabled
+            })
+        });
+
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+            apEnabled = data.ap_enabled;
+            updateAPUI();
+            showNotification(
+                apEnabled ? '热点已开启' : '热点已关闭', 
+                'success'
+            );
+        } else {
+            showNotification('操作失败: ' + data.message, 'error');
+        }
+    } catch (error) {
+        console.error('AP控制错误:', error);
+        showNotification('网络错误，请重试', 'error');
+    }
+}
+
+// 更新AP界面
+function updateAPUI() {
+    const apBtn = document.getElementById('ap-btn');
+    const apStatus = document.getElementById('ap-status');
+    const wifiInfo = document.getElementById('wifi-info');
+    
+    if (apEnabled) {
+        apBtn.innerHTML = '<span class="btn-icon">📡</span><span class="btn-text">关闭热点</span>';
+        apBtn.className = 'btn btn-wifi active';
+        apStatus.textContent = '已开启';
+        apStatus.className = 'status-value enabled';
+        wifiInfo.style.display = 'block';
+    } else {
+        apBtn.innerHTML = '<span class="btn-icon">📡</span><span class="btn-text">开启热点</span>';
+        apBtn.className = 'btn btn-wifi';
+        apStatus.textContent = '已关闭';
+        apStatus.className = 'status-value disabled';
+        wifiInfo.style.display = 'none';
+    }
+}
+
+// 获取AP状态
+async function getAPStatus() {
+    try {
+        const response = await fetch('/api/ap-status');
+        const data = await response.json();
+        
+        if (data.status === 'ok') {
+            apEnabled = data.ap_enabled;
+            updateAPUI();
+        }
+    } catch (error) {
+        console.error('获取AP状态错误:', error);
+    }
+}

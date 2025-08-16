@@ -341,12 +341,8 @@ esp_err_t wifi_manager_init(void)
     ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, 
                                               &wifi_event_handler, NULL));
     
-    // 设置WiFi模式 - AP+STA模式
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
-    
-    // 启用IP转发和NAT
-    ip_napt_enable(ap_ip_info.ip.addr, 1);
-    ESP_LOGI(TAG, "IP forwarding and NAT enabled for AP");
+    // 设置WiFi模式为STA，AP模式默认关闭
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     
     // 配置STA模式
     char sta_ssid[WIFI_SSID_MAX_LEN] = {0};
@@ -362,12 +358,13 @@ esp_err_t wifi_manager_init(void)
         ESP_ERROR_CHECK(esp_wifi_start());
         ESP_LOGI(TAG, "✅ WiFi connection initiated - waiting for IP address...");
     } else {
-        ESP_LOGW(TAG, "No STA config found in NVS, starting AP only.");
-        // 尝试启动AP模式，如果NVS中没有STA配置
+        ESP_LOGW(TAG, "No STA config found in NVS, starting AP mode as fallback.");
+        // 如果没有STA配置，启动AP模式作为备用
+        ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
         wifi_start_ap(ESP_WIFI_AP_SSID, ESP_WIFI_AP_PASS);
     }
 
-    // 配置AP模式 (使用默认值或从NVS加载)
+    // 配置AP模式 (使用默认值或从NVS加载) - 但不启动
     char ap_ssid[WIFI_SSID_MAX_LEN] = {0};
     char ap_password[WIFI_PASSWORD_MAX_LEN] = {0};
 
@@ -385,12 +382,10 @@ esp_err_t wifi_manager_init(void)
     s_wifi_ap_config.ap.max_connection = ESP_WIFI_AP_MAX_STA;
     s_wifi_ap_config.ap.authmode = WIFI_AUTH_WPA2_PSK;
 
-    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &s_wifi_ap_config));
-    
-    // For dual mode, start STA first then AP, or just AP if STA config fails
-    // The actual start of AP is moved to wifi_start_ap function to allow explicit control
-
+    // AP模式默认关闭，需要通过Web界面开启
     ESP_LOGI(TAG, "WiFi manager initialized successfully");
+    ESP_LOGI(TAG, "📱 AP mode: DISABLED by default (can be enabled via web interface)");
+    ESP_LOGI(TAG, "🌐 STA mode: ENABLED (connecting to saved WiFi network)");
     return ESP_OK;
 }
 
@@ -451,6 +446,140 @@ esp_err_t wifi_start_ap(const char* ssid, const char* password)
 
     s_wifi_state = WIFI_STATE_AP_MODE; // This might be overridden if STA connects later
     return ESP_OK;
+}
+
+// 添加AP模式开关函数
+esp_err_t wifi_enable_ap_mode(bool enable)
+{
+    esp_err_t ret = ESP_OK;
+    
+    if (enable) {
+        ESP_LOGI(TAG, "Enabling AP mode...");
+        
+        // 检查当前WiFi状态
+        wifi_mode_t current_mode;
+        ret = esp_wifi_get_mode(&current_mode);
+        if (ret != ESP_OK) {
+            ESP_LOGE(TAG, "Failed to get current WiFi mode: %s", esp_err_to_name(ret));
+            return ret;
+        }
+        
+        ESP_LOGI(TAG, "Current WiFi mode: %d", current_mode);
+        
+        // 如果已经是AP+STA模式，直接返回成功
+        if (current_mode == WIFI_MODE_APSTA) {
+            ESP_LOGI(TAG, "AP mode already enabled");
+            s_wifi_state = WIFI_STATE_AP_STA_MODE;
+            return ESP_OK;
+        }
+        
+        // 从STA模式切换到AP+STA模式
+        if (current_mode == WIFI_MODE_STA) {
+            ESP_LOGI(TAG, "Switching from STA to AP+STA mode...");
+            
+            // 先停止WiFi
+            ret = esp_wifi_stop();
+            if (ret != ESP_OK) {
+                ESP_LOGE(TAG, "Failed to stop WiFi: %s", esp_err_to_name(ret));
+                return ret;
+            }
+            
+            // 等待WiFi完全停止
+            vTaskDelay(pdMS_TO_TICKS(100));
+            
+            // 切换到AP+STA模式
+            ret = esp_wifi_set_mode(WIFI_MODE_APSTA);
+            if (ret != ESP_OK) {
+                ESP_LOGE(TAG, "Failed to set AP+STA mode: %s", esp_err_to_name(ret));
+                return ret;
+            }
+            
+            // 设置AP配置
+            ret = esp_wifi_set_config(WIFI_IF_AP, &s_wifi_ap_config);
+            if (ret != ESP_OK) {
+                ESP_LOGE(TAG, "Failed to set AP config: %s", esp_err_to_name(ret));
+                return ret;
+            }
+            
+            // 重新启动WiFi
+            ret = esp_wifi_start();
+            if (ret != ESP_OK) {
+                ESP_LOGE(TAG, "Failed to start WiFi: %s", esp_err_to_name(ret));
+                return ret;
+            }
+            
+            ESP_LOGI(TAG, "AP+STA mode enabled successfully");
+        }
+        
+        // 启用IP转发和NAT
+        esp_netif_ip_info_t ap_ip_info;
+        IP4_ADDR(&ap_ip_info.ip, 192, 168, 4, 1);
+        ip_napt_enable(ap_ip_info.ip.addr, 1);
+        ESP_LOGI(TAG, "IP forwarding and NAT enabled for AP");
+        
+        s_wifi_state = WIFI_STATE_AP_STA_MODE;
+        ESP_LOGI(TAG, "✅ AP mode enabled successfully");
+        
+    } else {
+        ESP_LOGI(TAG, "Disabling AP mode...");
+        
+        // 检查当前WiFi状态
+        wifi_mode_t current_mode;
+        ret = esp_wifi_get_mode(&current_mode);
+        if (ret != ESP_OK) {
+            ESP_LOGE(TAG, "Failed to get current WiFi mode: %s", esp_err_to_name(ret));
+            return ret;
+        }
+        
+        ESP_LOGI(TAG, "Current WiFi mode: %d", current_mode);
+        
+        // 如果已经是STA模式，直接返回成功
+        if (current_mode == WIFI_MODE_STA) {
+            ESP_LOGI(TAG, "AP mode already disabled");
+            s_wifi_state = WIFI_STATE_CONNECTED;
+            return ESP_OK;
+        }
+        
+        // 从AP+STA模式切换到STA模式
+        if (current_mode == WIFI_MODE_APSTA) {
+            ESP_LOGI(TAG, "Switching from AP+STA to STA mode...");
+            
+            // 先停止WiFi
+            ret = esp_wifi_stop();
+            if (ret != ESP_OK) {
+                ESP_LOGE(TAG, "Failed to stop WiFi: %s", esp_err_to_name(ret));
+                return ret;
+            }
+            
+            // 等待WiFi完全停止
+            vTaskDelay(pdMS_TO_TICKS(100));
+            
+            // 切换到STA模式
+            ret = esp_wifi_set_mode(WIFI_MODE_STA);
+            if (ret != ESP_OK) {
+                ESP_LOGE(TAG, "Failed to set STA mode: %s", esp_err_to_name(ret));
+                return ret;
+            }
+            
+            // 重新启动WiFi
+            ret = esp_wifi_start();
+            if (ret != ESP_OK) {
+                ESP_LOGE(TAG, "Failed to start WiFi: %s", esp_err_to_name(ret));
+                return ret;
+            }
+            
+            ESP_LOGI(TAG, "STA mode enabled successfully");
+        }
+        
+        // 禁用IP转发
+        // ip_napt_disable();
+        ESP_LOGI(TAG, "IP forwarding and NAT disabled");
+        
+        s_wifi_state = WIFI_STATE_CONNECTED;
+        ESP_LOGI(TAG, "✅ AP mode disabled successfully");
+    }
+    
+    return ret;
 }
 
 esp_err_t wifi_disconnect(void)

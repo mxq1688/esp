@@ -190,7 +190,7 @@ void app_main(void)
     const char *ip = wifi_get_ip_string();
     bool have_ip = (ip && strlen(ip) > 0 && strcmp(ip, "0.0.0.0") != 0);
     ESP_LOGI(TAG, "Access URLs:");
-    ESP_LOGI(TAG, "  - AP Mode: http://192.168.4.1");
+    ESP_LOGI(TAG, "  - AP Mode: http://192.168.4.1 (disabled by default)");
     if (have_ip) {
         ESP_LOGI(TAG, "  - STA Mode: http://%s", ip);
     } else {
