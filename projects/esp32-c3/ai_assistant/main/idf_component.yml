@@ -1,9 +1,8 @@
 dependencies:
   idf:
     version: ">=4.4.0"
-  # 注意: ESP32-C3不支持ESP-ADF和ESP-SR音频组件
-  # 保留基础HTTP和JSON组件用于网络通信
-  espressif/esp-http-client:
-    version: "^1.0.0"
-  espressif/esp-json:
-    version: "^1.0.0"
+  # ESP-IDF 6.0 内置组件说明:
+  # - esp_http_client: HTTP客户端功能 (内置组件，无需声明)
+  # - json (cJSON): JSON解析功能 (内置组件，无需声明)
+  # - ESP32-C3 不支持音频相关组件 (esp-adf, esp-sr)
+  # 如需其他组件，请在此添加
