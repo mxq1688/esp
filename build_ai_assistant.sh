@@ -27,10 +27,17 @@ echo "--- 进入项目目录: $PROJECT_PATH ---"
 cd "$PROJECT_PATH"
 
 echo "--- 清理之前的构建 ---"
-# 检查build目录是否存在，如果存在才进行清理
+# 检查build目录是否存在
 if [ -d "build" ]; then
-    echo "发现现有构建目录，正在清理..."
-    idf.py fullclean
+    echo "发现现有构建目录，检查其有效性..."
+    # 尝试使用idf.py fullclean，如果失败则手动删除
+    if ! idf.py fullclean 2>/dev/null; then
+        echo "构建目录无效，手动删除并重新开始..."
+        rm -rf build
+        echo "构建目录已清理完成"
+    else
+        echo "构建目录清理完成"
+    fi
 else
     echo "这是首次构建，跳过清理步骤"
 fi

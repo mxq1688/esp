@@ -1,10 +1,8 @@
 dependencies:
   idf:
     version: ">=4.4.0"
-  espressif/esp-sr:
-    version: "^1.0.0"
-  espressif/esp-adf:
-    version: "^2.5.0"
+  # 注意: ESP32-C3不支持ESP-ADF和ESP-SR音频组件
+  # 保留基础HTTP和JSON组件用于网络通信
   espressif/esp-http-client:
     version: "^1.0.0"
   espressif/esp-json:
