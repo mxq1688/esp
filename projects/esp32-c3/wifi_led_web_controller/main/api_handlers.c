@@ -71,17 +71,29 @@ esp_err_t api_led_color_handler(httpd_req_t *req)
     cJSON *r = cJSON_GetObjectItem(json, "r");
     cJSON *g = cJSON_GetObjectItem(json, "g");
     cJSON *b = cJSON_GetObjectItem(json, "b");
+    cJSON *brightness = cJSON_GetObjectItem(json, "brightness");
 
     if (r && g && b && cJSON_IsNumber(r) && cJSON_IsNumber(g) && cJSON_IsNumber(b)) {
         uint8_t red = (uint8_t)r->valueint;
         uint8_t green = (uint8_t)g->valueint;
         uint8_t blue = (uint8_t)b->valueint;
         
+        // 处理亮度参数
+        if (brightness && cJSON_IsNumber(brightness)) {
+            uint8_t brightness_val = (uint8_t)brightness->valueint;
+            if (brightness_val > 100) brightness_val = 100;
+            
+            // 设置亮度
+            led_set_brightness(brightness_val);
+            ESP_LOGI(TAG, "Brightness set to %d%%", brightness_val);
+        }
+        
+        // 设置RGB颜色
         led_set_rgb(red, green, blue);
         
         cJSON *response = cJSON_CreateObject();
         cJSON_AddStringToObject(response, "status", "success");
-        cJSON_AddStringToObject(response, "message", "Color updated");
+        cJSON_AddStringToObject(response, "message", "Color and brightness updated");
         
         esp_err_t ret = web_server_send_json_response(req, response);
         cJSON_Delete(response);
