@@ -206,11 +206,22 @@ esp_err_t api_ap_status_handler(httpd_req_t *req)
         return ESP_FAIL;
     }
 
+    // 获取当前WiFi模式
+    wifi_mode_t current_mode;
+    esp_err_t mode_ret = esp_wifi_get_mode(&current_mode);
+    
     // 添加AP状态信息
     cJSON_AddStringToObject(json, "status", "ok");
     cJSON_AddBoolToObject(json, "ap_enabled", wifi_is_ap_mode());
-    cJSON_AddStringToObject(json, "ap_ip", wifi_get_ip_string());
+    cJSON_AddStringToObject(json, "ap_ip", "192.168.4.1"); // AP固定IP
     cJSON_AddStringToObject(json, "sta_ip", wifi_get_ip_string());
+    cJSON_AddStringToObject(json, "wifi_mode", 
+        (mode_ret == ESP_OK) ? 
+        ((current_mode == WIFI_MODE_STA) ? "STA" : 
+         (current_mode == WIFI_MODE_AP) ? "AP" : 
+         (current_mode == WIFI_MODE_APSTA) ? "AP+STA" : "UNKNOWN") : "UNKNOWN");
+    cJSON_AddStringToObject(json, "ap_ssid", "ESP32C3-LED-Controller");
+    cJSON_AddStringToObject(json, "ap_password", "12345678");
 
     esp_err_t ret = web_server_send_json_response(req, json);
     cJSON_Delete(json);

@@ -480,6 +480,8 @@ document.addEventListener('touchstart', function() {
 // AP模式控制
 async function toggleAP() {
     try {
+        console.log('切换AP模式:', !apEnabled);
+        
         const response = await fetch('/api/ap-mode', {
             method: 'POST',
             headers: {
@@ -491,6 +493,7 @@ async function toggleAP() {
         });
 
         const data = await response.json();
+        console.log('AP切换响应:', data);
         
         if (data.status === 'success') {
             apEnabled = data.ap_enabled;
@@ -499,6 +502,11 @@ async function toggleAP() {
                 apEnabled ? '热点已开启' : '热点已关闭', 
                 'success'
             );
+            
+            // 延迟后重新获取状态以确保同步
+            setTimeout(() => {
+                getAPStatus();
+            }, 1000);
         } else {
             showNotification('操作失败: ' + data.message, 'error');
         }
@@ -536,8 +544,27 @@ async function getAPStatus() {
         const data = await response.json();
         
         if (data.status === 'ok') {
+            const oldStatus = apEnabled;
             apEnabled = data.ap_enabled;
-            updateAPUI();
+            
+            // 如果状态发生变化，更新界面
+            if (oldStatus !== apEnabled) {
+                console.log('AP状态变化:', oldStatus, '->', apEnabled);
+                updateAPUI();
+            }
+            
+            // 更新WiFi信息显示
+            if (data.ap_ssid) {
+                document.getElementById('ap-ssid').textContent = data.ap_ssid;
+            }
+            if (data.ap_password) {
+                document.getElementById('ap-password').textContent = data.ap_password;
+            }
+            if (data.ap_ip) {
+                document.getElementById('ap-ip').textContent = data.ap_ip;
+            }
+            
+            console.log('AP状态:', data);
         }
     } catch (error) {
         console.error('获取AP状态错误:', error);

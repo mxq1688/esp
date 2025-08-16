@@ -606,6 +606,13 @@ bool wifi_is_connected(void)
 
 bool wifi_is_ap_mode(void)
 {
+    // 检查当前WiFi模式
+    wifi_mode_t current_mode;
+    esp_err_t ret = esp_wifi_get_mode(&current_mode);
+    if (ret == ESP_OK) {
+        return (current_mode == WIFI_MODE_AP || current_mode == WIFI_MODE_APSTA);
+    }
+    // 如果获取模式失败，回退到状态变量
     return (s_wifi_state == WIFI_STATE_AP_MODE || s_wifi_state == WIFI_STATE_AP_STA_MODE);
 }
 
