@@ -27,7 +27,13 @@ echo "--- 进入项目目录: $PROJECT_PATH ---"
 cd "$PROJECT_PATH"
 
 echo "--- 清理之前的构建 ---"
-idf.py fullclean
+# 检查build目录是否存在，如果存在才进行清理
+if [ -d "build" ]; then
+    echo "发现现有构建目录，正在清理..."
+    idf.py fullclean
+else
+    echo "这是首次构建，跳过清理步骤"
+fi
 
 echo "--- 配置项目 ---"
 echo "提示: 如果需要配置WiFi等信息，请运行: idf.py menuconfig"
