@@ -17,6 +17,7 @@
 #include "esp_adc/adc_oneshot.h"
 #include "include/servo_driver.h"
 #include "include/joystick_led_controller.h"
+#include "include/bluetooth_controller.h"
 
 static const char *TAG = "SERVO_CONTROL";
 
@@ -43,6 +44,23 @@ static const char *TAG = "SERVO_CONTROL";
 
 static servo_handle_t servo_motor;
 static joystick_led_handle_t joystick_led_controller;
+
+// 蓝牙控制回调函数
+static void bluetooth_angle_callback(uint16_t angle)
+{
+    ESP_LOGI(TAG, "Bluetooth: Set servo angle to %d°", angle);
+    servo_set_angle(&servo_motor, angle);
+}
+
+static void bluetooth_led_callback(bool state)
+{
+    ESP_LOGI(TAG, "Bluetooth: Set LED state to %s", state ? "ON" : "OFF");
+    if (state) {
+        led_on(&joystick_led_controller);
+    } else {
+        led_off(&joystick_led_controller);
+    }
+}
 
 /* Demo sequence 1: Basic positioning (0-360 degrees) */
 static void demo_basic_positioning(void)
@@ -339,13 +357,14 @@ static esp_err_t init_joystick_led(void)
 
 void app_main(void)
 {
-    ESP_LOGI(TAG, "=== ESP32-C3 Servo Control with Joystick and LED ===");
+    ESP_LOGI(TAG, "=== ESP32-C3 Servo Control with Joystick, LED and Bluetooth ===");
     ESP_LOGI(TAG, "Hardware Configuration:");
     ESP_LOGI(TAG, "  Servo: GPIO%d (LEDC Channel %d)", SERVO_GPIO_PIN, SERVO_LEDC_CHANNEL);
     ESP_LOGI(TAG, "  Joystick X: ADC1_CH%d (GPIO%d)", JOYSTICK_X_AXIS_CHANNEL, 0);
     ESP_LOGI(TAG, "  Joystick Y: ADC1_CH%d (GPIO%d)", JOYSTICK_Y_AXIS_CHANNEL, 1);
     ESP_LOGI(TAG, "  Joystick Button: GPIO%d", JOYSTICK_BUTTON_PIN);
     ESP_LOGI(TAG, "  LED: GPIO%d (WS2812)", LED_GPIO_PIN);
+    ESP_LOGI(TAG, "  Bluetooth: BLE enabled");
     
     // 初始化舵机
     esp_err_t ret = init_servo();
