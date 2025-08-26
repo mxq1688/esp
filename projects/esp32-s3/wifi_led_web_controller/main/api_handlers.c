@@ -22,15 +22,14 @@ static void set_cors_headers(httpd_req_t *req)
     httpd_resp_set_hdr(req, "Access-Control-Allow-Headers", "Content-Type");
 }
 
-/* 根路径处理器 - 返回HTML页面 */
+/* 根路径处理器 - 返回简单HTML页面 */
 esp_err_t api_root_handler(httpd_req_t *req)
 {
     set_cors_headers(req);
     httpd_resp_set_type(req, "text/html");
-    httpd_resp_set_hdr(req, "Content-Encoding", "gzip");
     
-    size_t html_size = GET_FILE_SIZE(index_html_start, index_html_end);
-    httpd_resp_send(req, (const char *)index_html_start, html_size);
+    const char* html_content = "<html><body><h1>ESP32-S3 LED Controller</h1><p>API working!</p></body></html>";
+    httpd_resp_send(req, html_content, strlen(html_content));
     
     return ESP_OK;
 }
