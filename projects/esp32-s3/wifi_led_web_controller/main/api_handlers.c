@@ -9,6 +9,7 @@
 #include "cJSON.h"
 #include "wifi_manager.h"
 #include "led_controller.h"
+#include "web_files.h"
 #include "esp_timer.h"
 #include <string.h>
 
@@ -22,14 +23,17 @@ static void set_cors_headers(httpd_req_t *req)
     httpd_resp_set_hdr(req, "Access-Control-Allow-Headers", "Content-Type");
 }
 
-/* 根路径处理器 - 返回简单HTML页面 */
+/* 根路径处理器 - 返回完整的LED控制界面 */
 esp_err_t api_root_handler(httpd_req_t *req)
 {
     set_cors_headers(req);
-    httpd_resp_set_type(req, "text/html");
+    httpd_resp_set_type(req, "text/html; charset=utf-8");
     
-    const char* html_content = "<html><body><h1>ESP32-S3 LED Controller</h1><p>API working!</p></body></html>";
-    httpd_resp_send(req, html_content, strlen(html_content));
+    const char* html_content = get_index_html_content();
+    size_t content_length = get_index_html_size();
+    
+    ESP_LOGI(TAG, "Serving HTML page, size: %d bytes", content_length);
+    httpd_resp_send(req, html_content, content_length);
     
     return ESP_OK;
 }
@@ -111,10 +115,12 @@ esp_err_t api_led_color_handler(httpd_req_t *req)
         cJSON_Delete(json);
         
         if (ret == ESP_OK) {
-            httpd_resp_send(req, "{\"status\":\"ok\"}", strlen("{\"status\":\"ok\"}"));
+            httpd_resp_set_type(req, "application/json");
+            httpd_resp_send(req, "{\"status\":\"success\"}", strlen("{\"status\":\"success\"}"));
             return ESP_OK;
         } else {
-            httpd_resp_send_500(req);
+            httpd_resp_set_type(req, "application/json");
+            httpd_resp_send(req, "{\"status\":\"error\",\"message\":\"LED color setting failed\"}", strlen("{\"status\":\"error\",\"message\":\"LED color setting failed\"}"));
             return ESP_FAIL;
         }
     }
@@ -149,10 +155,12 @@ esp_err_t api_led_power_handler(httpd_req_t *req)
         cJSON_Delete(json);
         
         if (ret == ESP_OK) {
-            httpd_resp_send(req, "{\"status\":\"ok\"}", strlen("{\"status\":\"ok\"}"));
+            httpd_resp_set_type(req, "application/json");
+            httpd_resp_send(req, "{\"status\":\"success\"}", strlen("{\"status\":\"success\"}"));
             return ESP_OK;
         } else {
-            httpd_resp_send_500(req);
+            httpd_resp_set_type(req, "application/json");
+            httpd_resp_send(req, "{\"status\":\"error\",\"message\":\"LED color setting failed\"}", strlen("{\"status\":\"error\",\"message\":\"LED color setting failed\"}"));
             return ESP_FAIL;
         }
     }
@@ -187,22 +195,26 @@ esp_err_t api_led_effect_handler(httpd_req_t *req)
         
         if (strcmp(effect->valuestring, "rainbow") == 0) {
             led_effect = LED_EFFECT_RAINBOW;
-        } else if (strcmp(effect->valuestring, "breath") == 0) {
+        } else if (strcmp(effect->valuestring, "breath") == 0 || strcmp(effect->valuestring, "breathing") == 0) {
             led_effect = LED_EFFECT_BREATH;
         } else if (strcmp(effect->valuestring, "blink") == 0) {
             led_effect = LED_EFFECT_BLINK;
         } else if (strcmp(effect->valuestring, "fade") == 0) {
             led_effect = LED_EFFECT_FADE;
+        } else if (strcmp(effect->valuestring, "static") == 0) {
+            led_effect = LED_EFFECT_NONE;
         }
         
         esp_err_t ret = led_set_effect(led_effect);
         cJSON_Delete(json);
         
         if (ret == ESP_OK) {
-            httpd_resp_send(req, "{\"status\":\"ok\"}", strlen("{\"status\":\"ok\"}"));
+            httpd_resp_set_type(req, "application/json");
+            httpd_resp_send(req, "{\"status\":\"success\"}", strlen("{\"status\":\"success\"}"));
             return ESP_OK;
         } else {
-            httpd_resp_send_500(req);
+            httpd_resp_set_type(req, "application/json");
+            httpd_resp_send(req, "{\"status\":\"error\",\"message\":\"LED color setting failed\"}", strlen("{\"status\":\"error\",\"message\":\"LED color setting failed\"}"));
             return ESP_FAIL;
         }
     }
@@ -239,10 +251,12 @@ esp_err_t api_wifi_connect_handler(httpd_req_t *req)
         cJSON_Delete(json);
         
         if (ret == ESP_OK) {
-            httpd_resp_send(req, "{\"status\":\"ok\"}", strlen("{\"status\":\"ok\"}"));
+            httpd_resp_set_type(req, "application/json");
+            httpd_resp_send(req, "{\"status\":\"success\"}", strlen("{\"status\":\"success\"}"));
             return ESP_OK;
         } else {
-            httpd_resp_send_500(req);
+            httpd_resp_set_type(req, "application/json");
+            httpd_resp_send(req, "{\"status\":\"error\",\"message\":\"LED color setting failed\"}", strlen("{\"status\":\"error\",\"message\":\"LED color setting failed\"}"));
             return ESP_FAIL;
         }
     }
