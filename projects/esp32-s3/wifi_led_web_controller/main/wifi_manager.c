@@ -12,7 +12,15 @@
 #include "freertos/event_groups.h"
 #include <string.h>
 #include "esp_mac.h"
+
 #include "lwip/lwip_napt.h"
+#include <stdint.h>
+
+// 某些LWIP版本需要手动声明原型，否则会出现implicit declaration
+#ifndef IP_NAPT_DECLARED
+#define IP_NAPT_DECLARED
+extern void ip_napt_enable(uint32_t addr, int enable);
+#endif
 
 static const char *TAG = "WIFI_MANAGER";
 
@@ -81,8 +89,17 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
             }
         }
         
-        // 简化版本，不启用NAT功能
-        ESP_LOGI(TAG, "WiFi connected - hotspot devices can access internet through this device");
+        // 启用NAPT，将AP侧客户端流量经STA侧转发到外网
+        esp_netif_ip_info_t ap_ip;
+        if (esp_netif_get_ip_info(s_netif_ap, &ap_ip) == ESP_OK) {
+            // 将默认路由设置到STA侧
+            esp_netif_set_default_netif(s_netif_sta);
+            // 启用NAPT（LWIP NAT），参数为AP接口IP地址
+            ip_napt_enable(ap_ip.ip.addr, 1);
+            ESP_LOGI(TAG, "NAPT enabled on AP IP: " IPSTR, IP2STR(&ap_ip.ip));
+        } else {
+            ESP_LOGW(TAG, "Failed to get AP IP info, NAPT not enabled");
+        }
         
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_AP_START) {
         ESP_LOGI(TAG, "WiFi AP started. SSID: %s", (char*)s_wifi_ap_config.ap.ssid);

@@ -7,8 +7,14 @@
 #include <stdbool.h>
 
 // LED配置 - ESP32-S3适配
-#define LED_GPIO GPIO_NUM_48  // ESP32-S3 DevKitC-1板载LED
-#define LED_STRIP_LENGTH 1    // 单个LED
+// ESP32-S3-DevKitC-1 板载RGB LED引脚:
+// - 首次发布版本: GPIO48
+// - v1.1版本: GPIO38
+// 如果GPIO48不工作，请尝试GPIO38
+#define LED_GPIO_V1 GPIO_NUM_48    // ESP32-S3 DevKitC-1 首次发布版本
+#define LED_GPIO_V11 GPIO_NUM_38   // ESP32-S3 DevKitC-1 v1.1版本
+#define LED_GPIO LED_GPIO_V11      // 默认使用v1.1版本的GPIO38
+#define LED_STRIP_LENGTH 1         // 单个LED
 
 // 按钮配置
 #define BUTTON_GPIO GPIO_NUM_0  // ESP32-S3 DevKitC-1板载按钮

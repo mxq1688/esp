@@ -4,4 +4,4 @@ dependencies:
   idf:
     version: '>=4.1.0'
   # LED Strip component for WS2812 RGB LED control
-  # espressif/led_strip: '*'
+  espressif/led_strip: '*'

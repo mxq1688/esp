@@ -27,8 +27,13 @@ idf_component_register(
         log
         esp_common
         spi_flash
-        # espressif__led_strip
+        espressif__led_strip
 )
 
 # 设置组件版本信息
 set_property(TARGET ${COMPONENT_LIB} PROPERTY VERSION "2.0.0")
+
+# 启用LWIP NAPT/NAT
+target_compile_definitions(${COMPONENT_LIB} PRIVATE LWIP_NAPT=1 IP_FORWARD=1)
+
+

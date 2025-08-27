@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# ESP32-S3 WiFi LED Web Controller Build Script
-# 适用于ESP32-S3开发板
+# ESP32-S3 WiFi LED Web Controller DFU Build Script
+# 使用DFU模式烧写，无需按键操作
 
 # 确保在脚本出错时立即退出
 set -e
@@ -14,8 +14,10 @@ BAUD_RATE="115200"
 
 echo "=========================================="
 echo "ESP32-S3 WiFi LED Web Controller"
-echo "构建脚本 v2.0.0"
+echo "DFU模式构建脚本 v1.0.0"
 echo "=========================================="
+echo "🚀 使用DFU模式，无需手动按键！"
+echo ""
 
 # 检查ESP-IDF路径是否存在
 if [ ! -d "$ESP_IDF_PATH" ]; then
@@ -59,33 +61,47 @@ if [ $? -eq 0 ]; then
     echo "----------------------------------------"
     echo ""
     
-    echo "--- 准备烧写设备 ---"
+    echo "--- DFU模式烧写准备 ---"
+    echo "🔌 使用DFU模式，无需手动按键！"
+    echo "📱 请确保ESP32-S3通过USB-C连接到电脑"
+    echo "💡 系统会自动检测并进入下载模式"
+    echo ""
+    
     # 尝试终止任何可能占用串口的进程
     echo "尝试释放串口: $SERIAL_PORT"
     lsof -t "$SERIAL_PORT" 2>/dev/null | xargs -I {} kill -9 {} || true
     sleep 1 # 等待进程结束
 
-    echo "--- 烧写设备 ---"
-    echo "请确保您的ESP32-S3处于下载模式："
-    echo "1. 按住 BOOT 按钮。"
-    echo "2. 短按并释放 RST 按钮。"
-    echo "3. 几秒后松开 BOOT 按钮。"
+    echo "--- 开始DFU模式烧写 ---"
+    echo "🚀 执行: idf.py dfu-flash"
     echo ""
-    echo "正在烧写到端口: $SERIAL_PORT (波特率: $BAUD_RATE)"
+    
+    # 执行DFU烧写命令
+    idf.py dfu-flash
 
-    # 执行烧写命令
-    idf.py -p "$SERIAL_PORT" -b "$BAUD_RATE" flash monitor
-
-    echo "--- 烧写完成！ ---"
-    echo "您现在可以手动启动监视器查看日志："
-    echo "idf.py -p $SERIAL_PORT -b $BAUD_RATE monitor"
     echo ""
-    echo "🚀 其他命令:"
-    echo "  idf.py flash                    # 自动检测端口"
-    echo "  idf.py monitor                  # 串口监视器"
-    echo "  idf.py menuconfig               # 配置菜单"
-    echo "  idf.py size-files               # 文件大小分析"
+    echo "--- DFU烧写完成！ ---"
+    echo "✅ 固件已成功烧写到ESP32-S3"
     echo ""
+    
+    echo "--- 启动串口监视器 ---"
+    echo "📡 正在启动监视器查看运行日志..."
+    echo "💡 按 Ctrl+] 退出监视器"
+    echo ""
+    
+    # 启动监视器
+    idf.py monitor
+    
+    echo ""
+    echo "🚀 其他有用命令:"
+    echo "  idf.py dfu-flash              # DFU模式烧写"
+    echo "  idf.py flash                  # 传统模式烧写"
+    echo "  idf.py monitor                # 串口监视器"
+    echo "  idf.py menuconfig             # 配置菜单"
+    echo "  idf.py size-files             # 文件大小分析"
+    echo "  idf.py erase-flash            # 擦除Flash"
+    echo ""
+    
 else
     echo "❌ 构建失败!"
     exit 1

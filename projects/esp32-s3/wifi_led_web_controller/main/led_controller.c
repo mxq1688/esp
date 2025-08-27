@@ -1,7 +1,7 @@
 /*
  * LED Controller Implementation for ESP32-S3
  * 
- * 简化的LED控制实现，使用GPIO直接控制
+ * WS2812 RGB LED控制实现
  */
 
 #include "led_controller.h"
@@ -12,6 +12,7 @@
 #include "freertos/semphr.h"
 #include "freertos/task.h"
 #include "driver/gpio.h"
+#include "led_strip.h"
 #include <math.h>
 #include <string.h>
 
@@ -24,6 +25,8 @@ static led_effect_t s_current_effect = LED_EFFECT_NONE;
 static TaskHandle_t s_effect_task_handle = NULL;
 static SemaphoreHandle_t s_led_mutex = NULL;
 static bool s_led_initialized = false;
+static gpio_num_t s_active_led_gpio = LED_GPIO;  // 实际使用的GPIO引脚
+static led_strip_handle_t s_led_strip = NULL;    // LED Strip句柄
 
 /* 预设颜色定义 */
 const rgb_color_t COLOR_RED       = {255, 0,   0,   100};
@@ -46,10 +49,55 @@ const rgb_color_t COLOR_PINK      = {255, 192, 203, 100};
 #define NVS_KEY_POWER "power"
 #define NVS_KEY_EFFECT "effect"
 
+/* 测试WS2812 LED */
+static bool test_ws2812_led(gpio_num_t gpio_pin)
+{
+    ESP_LOGI(TAG, "Testing WS2812 LED on GPIO%d...", gpio_pin);
+    
+    // 创建临时LED Strip配置
+    led_strip_config_t strip_config = {
+        .strip_gpio_num = gpio_pin,
+        .max_leds = 1,
+        .led_model = LED_MODEL_WS2812,
+        .color_component_format = LED_STRIP_COLOR_COMPONENT_FMT_GRB,
+        .flags.invert_out = false,
+    };
+    
+    led_strip_rmt_config_t rmt_config = {
+        .clk_src = RMT_CLK_SRC_DEFAULT,
+        .resolution_hz = 10 * 1000 * 1000, // 10MHz
+        .flags.with_dma = false,
+    };
+    
+    led_strip_handle_t test_strip = NULL;
+    esp_err_t ret = led_strip_new_rmt_device(&strip_config, &rmt_config, &test_strip);
+    if (ret != ESP_OK) {
+        ESP_LOGW(TAG, "Failed to create LED strip on GPIO%d: %s", gpio_pin, esp_err_to_name(ret));
+        return false;
+    }
+    
+    // 测试LED - 红绿蓝闪烁
+    uint8_t colors[][3] = {{255, 0, 0}, {0, 255, 0}, {0, 0, 255}};
+    for (int i = 0; i < 3; i++) {
+        led_strip_set_pixel(test_strip, 0, colors[i][0], colors[i][1], colors[i][2]);
+        led_strip_refresh(test_strip);
+        vTaskDelay(pdMS_TO_TICKS(200));
+        led_strip_clear(test_strip);
+        led_strip_refresh(test_strip);
+        vTaskDelay(pdMS_TO_TICKS(100));
+    }
+    
+    // 清理
+    led_strip_del(test_strip);
+    
+    ESP_LOGI(TAG, "WS2812 test on GPIO%d completed", gpio_pin);
+    return true;
+}
+
 /* LED控制器初始化 */
 esp_err_t led_controller_init(void)
 {
-    ESP_LOGI(TAG, "Initializing LED controller...");
+    ESP_LOGI(TAG, "Initializing WS2812 LED controller...");
     
     // 创建互斥锁
     s_led_mutex = xSemaphoreCreateMutex();
@@ -58,28 +106,49 @@ esp_err_t led_controller_init(void)
         return ESP_FAIL;
     }
     
-    // 配置GPIO作为LED输出
-    ESP_LOGI(TAG, "Configuring LED GPIO: %d", LED_GPIO);
-    
-    gpio_config_t io_conf = {
-        .pin_bit_mask = (1ULL << LED_GPIO),
-        .mode = GPIO_MODE_OUTPUT,
-        .pull_up_en = GPIO_PULLUP_DISABLE,
-        .pull_down_en = GPIO_PULLDOWN_DISABLE,
-        .intr_type = GPIO_INTR_DISABLE,
+    // 自动探测WS2812数据脚：按 GPIO48 -> GPIO38 -> GPIO2 顺序
+    const gpio_num_t probe_pins[] = { LED_GPIO_V1, LED_GPIO_V11, GPIO_NUM_2 };
+    const char *probe_names[] = { "GPIO48", "GPIO38", "GPIO2" };
+    bool found = false;
+    for (int i = 0; i < 3; i++) {
+        ESP_LOGI(TAG, "Probing WS2812 on %s...", probe_names[i]);
+        if (test_ws2812_led(probe_pins[i])) {
+            s_active_led_gpio = probe_pins[i];
+            ESP_LOGI(TAG, "WS2812 detected on %s", probe_names[i]);
+            found = true;
+            break;
+        }
+    }
+    if (!found) {
+        ESP_LOGW(TAG, "WS2812 not detected on GPIO48/GPIO38/GPIO2, fallback to default %d", (int)LED_GPIO);
+        s_active_led_gpio = LED_GPIO;
+    }
+
+    // 使用选中的引脚创建LED Strip句柄
+    led_strip_config_t strip_config = {
+        .strip_gpio_num = s_active_led_gpio,
+        .max_leds = 1,
+        .led_model = LED_MODEL_WS2812,
+        .color_component_format = LED_STRIP_COLOR_COMPONENT_FMT_GRB,
+        .flags.invert_out = false,
     };
-    
-    esp_err_t ret = gpio_config(&io_conf);
+    led_strip_rmt_config_t rmt_config = {
+        .clk_src = RMT_CLK_SRC_DEFAULT,
+        .resolution_hz = 10 * 1000 * 1000, // 10MHz
+        .flags.with_dma = false,
+    };
+    esp_err_t ret = led_strip_new_rmt_device(&strip_config, &rmt_config, &s_led_strip);
     if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to configure GPIO: %s", esp_err_to_name(ret));
+        ESP_LOGE(TAG, "Failed to create LED strip: %s", esp_err_to_name(ret));
         return ret;
     }
     
     // 初始状态：LED关闭
-    gpio_set_level(LED_GPIO, 0);
+    led_strip_clear(s_led_strip);
+    led_strip_refresh(s_led_strip);
     
     s_led_initialized = true;
-    ESP_LOGI(TAG, "LED controller initialized - GPIO:%d", LED_GPIO);
+    ESP_LOGI(TAG, "WS2812 LED controller initialized - GPIO:%d", s_active_led_gpio);
     
     return ESP_OK;
 }
@@ -87,21 +156,22 @@ esp_err_t led_controller_init(void)
 /* 更新LED输出 */
 static esp_err_t led_update_output(void)
 {
-    if (!s_led_initialized) {
+    if (!s_led_initialized || s_led_strip == NULL) {
         return ESP_ERR_INVALID_STATE;
     }
     
     if (!s_power_on) {
         // LED关闭
-        gpio_set_level(LED_GPIO, 0);
+        led_strip_clear(s_led_strip);
+        led_strip_refresh(s_led_strip);
     } else {
-        // LED开启（简化版本，不考虑颜色，只考虑亮度）
-        int brightness = s_current_color.brightness;
-        if (brightness > 50) {
-            gpio_set_level(LED_GPIO, 1);
-        } else {
-            gpio_set_level(LED_GPIO, 0);
-        }
+        // LED开启，设置RGB颜色和亮度
+        uint8_t r = (s_current_color.r * s_current_color.brightness) / 100;
+        uint8_t g = (s_current_color.g * s_current_color.brightness) / 100;
+        uint8_t b = (s_current_color.b * s_current_color.brightness) / 100;
+        
+        led_strip_set_pixel(s_led_strip, 0, r, g, b);
+        led_strip_refresh(s_led_strip);
     }
     
     return ESP_OK;
@@ -221,13 +291,26 @@ esp_err_t led_startup_animation(void)
 {
     ESP_LOGI(TAG, "Starting LED startup animation...");
     
-    // 简单的启动动画
-    for (int i = 0; i < 3; i++) {
-        gpio_set_level(LED_GPIO, 1);
-        vTaskDelay(pdMS_TO_TICKS(200));
-        gpio_set_level(LED_GPIO, 0);
+    // WS2812启动动画 - 彩虹色循环
+    uint8_t rainbow_colors[][3] = {
+        {255, 0, 0},   // 红
+        {255, 127, 0}, // 橙
+        {255, 255, 0}, // 黄
+        {0, 255, 0},   // 绿
+        {0, 0, 255},   // 蓝
+        {75, 0, 130},  // 靛
+        {148, 0, 211}  // 紫
+    };
+    
+    for (int i = 0; i < 7; i++) {
+        led_strip_set_pixel(s_led_strip, 0, rainbow_colors[i][0], rainbow_colors[i][1], rainbow_colors[i][2]);
+        led_strip_refresh(s_led_strip);
         vTaskDelay(pdMS_TO_TICKS(200));
     }
+    
+    // 清除
+    led_strip_clear(s_led_strip);
+    led_strip_refresh(s_led_strip);
     
     // 设置为低亮度
     rgb_color_t startup_color = {255, 255, 255, 20};
@@ -243,9 +326,11 @@ esp_err_t led_wifi_connected_indication(void)
 {
     // 绿色闪烁3次表示WiFi连接成功
     for (int i = 0; i < 3; i++) {
-        gpio_set_level(LED_GPIO, 1);
+        led_strip_set_pixel(s_led_strip, 0, 0, 255, 0); // 绿色
+        led_strip_refresh(s_led_strip);
         vTaskDelay(pdMS_TO_TICKS(100));
-        gpio_set_level(LED_GPIO, 0);
+        led_strip_clear(s_led_strip);
+        led_strip_refresh(s_led_strip);
         vTaskDelay(pdMS_TO_TICKS(100));
     }
     
@@ -261,9 +346,11 @@ esp_err_t led_wifi_disconnected_indication(void)
 {
     // 红色闪烁3次表示WiFi断开
     for (int i = 0; i < 3; i++) {
-        gpio_set_level(LED_GPIO, 1);
+        led_strip_set_pixel(s_led_strip, 0, 255, 0, 0); // 红色
+        led_strip_refresh(s_led_strip);
         vTaskDelay(pdMS_TO_TICKS(100));
-        gpio_set_level(LED_GPIO, 0);
+        led_strip_clear(s_led_strip);
+        led_strip_refresh(s_led_strip);
         vTaskDelay(pdMS_TO_TICKS(100));
     }
     
