@@ -10,6 +10,7 @@
 4. NodeMCU（Lua RTOS 移植 / 第三方）
     ESP8266 上常用，ESP32 上也有人移植，但不活跃。
     现已被 MicroPython 取代，推荐后者。
+    
 5. 其它方式（小众 / 特殊需求）
     ESP32 + Rust（用 esp-idf-sys crate）
     ESP32 + JavaScript（如 Espruino，部分支持）
