@@ -1,0 +1,21 @@
+idf_component_register(
+    SRCS 
+        "main.c"
+        "ml307r_driver.c"
+        "web_server.c"
+        "api_handlers.c"
+        "web_files.c"
+        "wifi_manager.c"
+    INCLUDE_DIRS 
+        "include"
+    REQUIRES 
+        esp_http_server
+        esp_wifi
+        esp_netif
+        esp_event
+        nvs_flash
+        driver
+        esp_timer
+        json
+        lwip
+)
