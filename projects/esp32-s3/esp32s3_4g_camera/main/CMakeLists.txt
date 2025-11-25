@@ -1,0 +1,23 @@
+idf_component_register(
+    SRCS 
+        "main.c"
+        "camera_driver.c"
+        "ml307r_driver.c"
+        "web_server.c"
+        "image_processor.c"
+        "api_handlers.c"
+        "web_files.c"
+    INCLUDE_DIRS 
+        "."
+        "include"
+    REQUIRES 
+        nvs_flash
+        esp_http_server
+        esp_wifi
+        esp_netif
+        esp_event
+        driver
+        esp_timer
+        esp_psram
+)
+
