@@ -92,6 +92,25 @@ void app_main(void)
         return;
     }
 
+    // LED 测试：点亮几个 LED 确认硬件连接正常
+    ESP_LOGI(TAG, "Testing LEDs...");
+    rgb_color_t red = {255, 0, 0};
+    rgb_color_t green = {0, 255, 0};
+    rgb_color_t blue = {0, 0, 255};
+    rgb_color_t white = {255, 255, 255};
+    
+    // 点亮 4 个 LED（12, 3, 6, 9 点钟位置）
+    neopixel_set_pixel(0, red);      // 12点
+    neopixel_set_pixel(15, green);   // 3点
+    neopixel_set_pixel(30, blue);    // 6点
+    neopixel_set_pixel(45, white);   // 9点
+    neopixel_refresh();
+    
+    ESP_LOGI(TAG, "LED test: 4 LEDs should be lit (red, green, blue, white)");
+    vTaskDelay(pdMS_TO_TICKS(3000)); // 显示 3 秒
+    
+    neopixel_clear(); // 清除测试 LED
+
     // Initialize WiFi
     ESP_LOGI(TAG, "Initializing WiFi...");
     ret = wifi_manager_init();

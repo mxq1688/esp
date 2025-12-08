@@ -4,9 +4,9 @@
 set -e
 
 # 定义ESP-IDF路径和项目路径
-ESP_IDF_PATH="/Users/meng/stu/esp/esp-idf"
+ESP_IDF_PATH="/Users/meng/stu/esp/idf/esp-idf"
 PROJECT_PATH="/Users/meng/stu/esp/idf/projects/esp32-c3/neopixel_clock"
-SERIAL_PORT="/dev/cu.usbmodem1101" # ESP32-C3设备端口
+SERIAL_PORT="/dev/cu.usbmodem101" # ESP32-C3设备端口
 BAUD_RATE="460800"
 
 echo "=== NeoPixel Clock 编译和烧写脚本 ==="

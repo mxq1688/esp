@@ -10,13 +10,13 @@
 #include <stdbool.h>
 
 // WiFi credentials - modify these for your network
-#define WIFI_SSID      "YourWifiSSID"
-#define WIFI_PASSWORD  "YourWifiPassword"
+#define WIFI_SSID      "hm"
+#define WIFI_PASSWORD  "11111111"
 
 // NTP configuration
-#define NTP_SERVER     "pool.ntp.org"
-#define GMT_OFFSET_SEC (-18000)      // GMT offset in seconds (e.g., -18000 for EST)
-#define DAYLIGHT_OFFSET_SEC (3600)   // Daylight saving time offset
+#define NTP_SERVER     "ntp.aliyun.com"  // 阿里云 NTP 服务器（国内）
+#define GMT_OFFSET_SEC (28800)       // GMT+8 中国时区 (8 * 3600)
+#define DAYLIGHT_OFFSET_SEC (0)      // 中国不使用夏令时
 
 // Time sync interval
 #define NTP_SYNC_INTERVAL_MS (3600000)  // 1 hour
