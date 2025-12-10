@@ -6,9 +6,13 @@
 #include "neopixel_driver.h"
 #include "led_strip.h"
 #include "esp_log.h"
+#include <string.h>
 
 static const char *TAG = "neopixel";
 static led_strip_handle_t led_strip = NULL;
+
+// 颜色缓冲区，用于读取像素颜色
+static rgb_color_t s_color_buffer[LED_STRIP_NUM_LEDS] = {0};
 
 esp_err_t neopixel_init(void)
 {
@@ -61,7 +65,24 @@ esp_err_t neopixel_set_pixel(uint32_t index, rgb_color_t color)
         return ESP_ERR_INVALID_ARG;
     }
 
+    // 保存到缓冲区
+    s_color_buffer[index] = color;
+    
     return led_strip_set_pixel(led_strip, index, color.r, color.g, color.b);
+}
+
+esp_err_t neopixel_get_pixel(uint32_t index, rgb_color_t *color)
+{
+    if (color == NULL) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    if (index >= LED_STRIP_NUM_LEDS) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    *color = s_color_buffer[index];
+    return ESP_OK;
 }
 
 esp_err_t neopixel_clear(void)
@@ -71,6 +92,9 @@ esp_err_t neopixel_clear(void)
         return ESP_ERR_INVALID_STATE;
     }
 
+    // 清空颜色缓冲区
+    memset(s_color_buffer, 0, sizeof(s_color_buffer));
+    
     esp_err_t ret = led_strip_clear(led_strip);
     if (ret != ESP_OK) {
         return ret;

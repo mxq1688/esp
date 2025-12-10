@@ -38,6 +38,15 @@ esp_err_t neopixel_init(void);
 esp_err_t neopixel_set_pixel(uint32_t index, rgb_color_t color);
 
 /**
+ * @brief Get a single LED color
+ * 
+ * @param index LED index (0 to NUM_LEDS-1)
+ * @param color Pointer to store RGB color
+ * @return ESP_OK on success
+ */
+esp_err_t neopixel_get_pixel(uint32_t index, rgb_color_t *color);
+
+/**
  * @brief Clear all LEDs (set to black)
  * 
  * @return ESP_OK on success
