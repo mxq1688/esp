@@ -95,12 +95,9 @@ esp_err_t neopixel_clear(void)
     // 清空颜色缓冲区
     memset(s_color_buffer, 0, sizeof(s_color_buffer));
     
-    esp_err_t ret = led_strip_clear(led_strip);
-    if (ret != ESP_OK) {
-        return ret;
-    }
-
-    return led_strip_refresh(led_strip);
+    // 只清除内部缓冲区，不刷新显示
+    // 刷新应在 neopixel_refresh() 中统一完成，避免闪烁
+    return led_strip_clear(led_strip);
 }
 
 esp_err_t neopixel_refresh(void)

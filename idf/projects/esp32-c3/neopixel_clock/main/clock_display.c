@@ -24,49 +24,50 @@ esp_err_t clock_display_update(int hours, int minutes, int seconds)
     // Convert to 12-hour format
     hours = hours % 12;
 
-    // Clear all LEDs first
-    ret = neopixel_clear();
-    if (ret != ESP_OK) {
-        return ret;
-    }
-
     // Calculate LED positions
     int hour_led = (hours * 5 + minutes / 12 + LED_OFFSET) % 60;
     int minute_led = (minutes + LED_OFFSET) % 60;
     int second_led = (seconds + LED_OFFSET) % 60;
 
-    // Set hour-adjacent LEDs (to make hour "hand" look wider)
+    // 定义颜色
+    rgb_color_t black = {0, 0, 0};
     rgb_color_t dim_hour_color = {
         .r = DIM_HOUR_COLOR_R,
         .g = DIM_HOUR_COLOR_G,
         .b = DIM_HOUR_COLOR_B
     };
-    neopixel_set_pixel((hour_led + 1) % 60, dim_hour_color);
-    neopixel_set_pixel((hour_led + 59) % 60, dim_hour_color);
-
-    // Set second LED
     rgb_color_t second_color = {
         .r = SECOND_COLOR_R,
         .g = SECOND_COLOR_G,
         .b = SECOND_COLOR_B
     };
-    neopixel_set_pixel(second_led, second_color);
-
-    // Set minute LED
     rgb_color_t minute_color = {
         .r = MINUTE_COLOR_R,
         .g = MINUTE_COLOR_G,
         .b = MINUTE_COLOR_B
     };
-    neopixel_set_pixel(minute_led, minute_color);
-
-    // Set hour LED (last to ensure visibility)
     rgb_color_t hour_color = {
         .r = HOUR_COLOR_R,
         .g = HOUR_COLOR_G,
         .b = HOUR_COLOR_B
     };
-    neopixel_set_pixel(hour_led, hour_color);
+
+    // 一次性设置所有像素，避免使用 clear
+    // 先将所有像素设为黑色，再设置时钟指针
+    for (int i = 0; i < 60; i++) {
+        // 判断当前像素应该是什么颜色
+        if (i == hour_led) {
+            neopixel_set_pixel(i, hour_color);
+        } else if (i == minute_led) {
+            neopixel_set_pixel(i, minute_color);
+        } else if (i == second_led) {
+            neopixel_set_pixel(i, second_color);
+        } else if (i == (hour_led + 1) % 60 || i == (hour_led + 59) % 60) {
+            neopixel_set_pixel(i, dim_hour_color);
+        } else {
+            neopixel_set_pixel(i, black);
+        }
+    }
 
     // Refresh the display
     ret = neopixel_refresh();

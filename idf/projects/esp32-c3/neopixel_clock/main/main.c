@@ -424,6 +424,7 @@ static void clock_task(void *pvParameters)
 {
     time_t now;
     struct tm timeinfo;
+    static int last_second = -1;  // 记录上一次显示的秒数
 
     ESP_LOGI(TAG, "Clock task started");
 
@@ -476,9 +477,12 @@ static void clock_task(void *pvParameters)
                 if (light_show_is_active()) {
                     light_show_update();
                 } else if (s_time_synced) {
-                    // Update clock display
+                    // 只在秒数变化时才更新显示，避免频繁刷新导致闪烁
                     localtime_r(&now, &timeinfo);
-                    clock_display_update(timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+                    if (timeinfo.tm_sec != last_second) {
+                        last_second = timeinfo.tm_sec;
+                        clock_display_update(timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+                    }
                 } else {
                     // 时间未同步，显示彩色呼吸灯（每次呼吸换颜色）
                     static int breath_val = 0;
@@ -552,6 +556,7 @@ void app_main(void)
     ESP_LOGI(TAG, "LED test: 4 LEDs should be lit");
     vTaskDelay(pdMS_TO_TICKS(2000));
     neopixel_clear();
+    neopixel_refresh();  // 清屏需要刷新才能生效
 
     // Initialize WiFi
     ESP_LOGI(TAG, "Initializing WiFi...");
