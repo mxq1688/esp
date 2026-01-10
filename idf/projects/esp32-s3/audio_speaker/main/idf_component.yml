@@ -1,0 +1,6 @@
+## IDF Component Manager Manifest File
+version: "1.0.0"
+description: "ESP32-S3 Audio Speaker - I2S audio output with network streaming"
+targets:
+  - esp32s3
+
