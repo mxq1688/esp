@@ -33,7 +33,7 @@ extern "C" {
  */
 #define I2S_BCLK_PIN    15
 #define I2S_WS_PIN      16
-#define I2S_DOUT_PIN    17
+#define I2S_DOUT_PIN    7
 
 /**
  * @brief 默认音频采样率

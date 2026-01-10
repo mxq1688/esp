@@ -74,25 +74,13 @@ static void print_wiring_guide(void)
  */
 static void local_audio_task(void *pvParameters)
 {
-    ESP_LOGI(TAG, "本地音频演示任务启动");
+    ESP_LOGI(TAG, "音频播放器已就绪，等待播放指令...");
     
     audio_player_set_volume(70);
     
+    // 空闲等待
     while (1) {
-        ESP_LOGI(TAG, "");
-        ESP_LOGI(TAG, ">>> 开始本地音频演示 <<<");
-        
-        // 播放 440Hz 测试音
-        ESP_LOGI(TAG, "[1/2] 播放 440Hz 测试音 - 1秒");
-        audio_player_play_tone(440, 1000);
-        vTaskDelay(pdMS_TO_TICKS(500));
-        
-        // 播放《小星星》
-        ESP_LOGI(TAG, "[2/2] 播放《小星星》旋律");
-        audio_player_play_sample();
-        
-        ESP_LOGI(TAG, ">>> 演示完成，30秒后重复 <<<");
-        vTaskDelay(pdMS_TO_TICKS(30000));
+        vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }
 
